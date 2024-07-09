@@ -22,7 +22,7 @@ open Avalonia
 open Avalonia.Controls
 open Avalonia.Markup.Xaml
 
-open Lib.ShaderMix
+open Lib.ShaderMixer
 
 type MainWindow () as this = 
   inherit Window ()

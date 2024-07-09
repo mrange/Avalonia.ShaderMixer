@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses
 *)
 
-namespace Lib.ShaderMix
+namespace Lib.ShaderMixer
 
 open System
 open System.Diagnostics
@@ -47,11 +47,11 @@ module internal Internals =
       let mutable OpenGLMixer  : OpenGLMixer voption  = ValueNone
 
       let dispose () =
-        let oglScenes = OpenGLMixer
+        let oglm = OpenGLMixer
         OpenGLMixer <- ValueNone
-        match oglScenes with
+        match oglm with
         | ValueNone       -> ()
-        | ValueSome ogls  -> OpenGL.tearDownOpenGLMixer ogls
+        | ValueSome oglm  -> Mixer.tearDownOpenGLMixer oglm
 
       interface IDisposable with
         member x.Dispose () = dispose ()
@@ -101,21 +101,21 @@ module internal Internals =
                   let oglm = 
                     match OpenGLMixer with
                     | ValueNone       -> 
-                      OpenGL.setupOpenGLMixer glContext gl resolution mixer
-                    | ValueSome oglss -> 
-                      if not (oglss.ContextIsSame glContext) then
-                        OpenGL.tearDownOpenGLMixer oglss
-                        OpenGL.setupOpenGLMixer glContext gl resolution mixer
-                      else if  ((frameNo &&& 0x3F) = 0) && resolution <> oglss.Resolution then
+                      Mixer.setupOpenGLMixer glContext gl resolution mixer
+                    | ValueSome oglm -> 
+                      if not (oglm.ContextIsSame glContext) then
+                        Mixer.tearDownOpenGLMixer oglm
+                        Mixer.setupOpenGLMixer glContext gl resolution mixer
+                      else if  ((frameNo &&& 0x3F) = 0) && resolution <> oglm.Resolution then
                         // We don't want to resize too often
-                        OpenGL.resizeOpenGLMixer resolution oglss
+                        Mixer.resizeOpenGLMixer resolution oglm
                       else
-                        oglss
+                        oglm
 
                   OpenGLMixer <- ValueSome oglm
                   
                   let time = float32 start.ElapsedMilliseconds/1000.F
-                  OpenGL.renderOpenGLMixer pixelRect time frameNo oglm presenterID sceneID
+                  Mixer.renderOpenGLMixer pixelRect time frameNo oglm presenterID sceneID
 
                   frameNo <- frameNo + 1
                 | _                           ->

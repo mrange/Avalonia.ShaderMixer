@@ -17,11 +17,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses
 *)
 
 module Scenes
-open Lib.ShaderMix
+open Lib.ShaderMixer
 
-let presenterID     = OpenGL.simplePresenterID
+let presenterID     = Mixer.simplePresenterID
 
-let redID           = OpenGL.redSceneID
+let redID           = Mixer.redSceneID
 let gravitySucksID  = SceneID "gravitySucks"
 let gravitySucks    = 
   {
@@ -44,10 +44,10 @@ let gravitySucks    =
 let mixer = 
   {
     NamedBitmapImages = Map.empty
-    NamedPresenters = OpenGL.defaultPresenters
+    NamedPresenters = Mixer.defaultPresenters
     NamedScenes =
       [|
         gravitySucksID    , gravitySucks
-        OpenGL.redSceneID , OpenGL.redScene
+        Mixer.redSceneID , Mixer.redScene
       |] |> Map.ofArray
   }
