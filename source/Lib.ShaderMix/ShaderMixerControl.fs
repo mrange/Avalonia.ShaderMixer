@@ -36,7 +36,7 @@ module internal Internals =
   | ChangeSceneMessage          of SceneID
   | DisposeMessage
 
-  type ShaderMixerVisual(start : Stopwatch, scenes : Scenes, initialRenderScaling : float, initialPresenter : PresenterID, initialScene : SceneID) =
+  type ShaderMixerVisual(start : Stopwatch, mixer: Mixer, initialRenderScaling : float, initialPresenter : PresenterID, initialScene : SceneID) =
     class
       inherit CompositionCustomVisualHandler()
 
@@ -44,14 +44,14 @@ module internal Internals =
       let mutable sceneID                               = initialScene
       let mutable frameNo                               = 0
       let mutable renderScaling                         = initialRenderScaling
-      let mutable openGLScenes  : OpenGLScenes voption  = ValueNone
+      let mutable OpenGLMixer  : OpenGLMixer voption  = ValueNone
 
       let dispose () =
-        let oglScenes = openGLScenes
-        openGLScenes <- ValueNone
+        let oglScenes = OpenGLMixer
+        OpenGLMixer <- ValueNone
         match oglScenes with
         | ValueNone       -> ()
-        | ValueSome ogls  -> OpenGL.tearDownOpenGLScenes ogls
+        | ValueSome ogls  -> OpenGL.tearDownOpenGLMixer ogls
 
       interface IDisposable with
         member x.Dispose () = dispose ()
@@ -98,24 +98,24 @@ module internal Internals =
                   let gl = glContext.GlInterface
                   let resolution = Vector2 (float32 pixelRect.Width, float32 pixelRect.Height)
 
-                  let oglss = 
-                    match openGLScenes with
+                  let oglm = 
+                    match OpenGLMixer with
                     | ValueNone       -> 
-                      OpenGL.setupOpenGLScenes glContext gl resolution scenes
+                      OpenGL.setupOpenGLMixer glContext gl resolution mixer
                     | ValueSome oglss -> 
                       if not (oglss.ContextIsSame glContext) then
-                        OpenGL.tearDownOpenGLScenes oglss
-                        OpenGL.setupOpenGLScenes glContext gl resolution scenes
+                        OpenGL.tearDownOpenGLMixer oglss
+                        OpenGL.setupOpenGLMixer glContext gl resolution mixer
                       else if  ((frameNo &&& 0x3F) = 0) && resolution <> oglss.Resolution then
                         // We don't want to resize too often
-                        OpenGL.resizeOpenGLScenes resolution oglss
+                        OpenGL.resizeOpenGLMixer resolution oglss
                       else
                         oglss
 
-                  openGLScenes <- ValueSome oglss
+                  OpenGLMixer <- ValueSome oglm
                   
                   let time = float32 start.ElapsedMilliseconds/1000.F
-                  OpenGL.renderOpenGLScenes pixelRect time frameNo oglss presenterID sceneID
+                  OpenGL.renderOpenGLMixer pixelRect time frameNo oglm presenterID sceneID
 
                   frameNo <- frameNo + 1
                 | _                           ->
@@ -124,7 +124,7 @@ module internal Internals =
     end
 open Internals
 
-type ShaderMixerControl(scenes : Scenes, initialPresenter : PresenterID, initialScene : SceneID) =
+type ShaderMixerControl(mixer: Mixer, initialPresenter : PresenterID, initialScene : SceneID) =
   class
     inherit Control()
 
@@ -164,7 +164,7 @@ type ShaderMixerControl(scenes : Scenes, initialPresenter : PresenterID, initial
       if not (isNull visual) then
         assert shaderMixerVisual.IsNone
         let composedVisual =
-          new ShaderMixerVisual (start, scenes, renderScaling, presenterID, sceneID)
+          new ShaderMixerVisual (start, mixer, renderScaling, presenterID, sceneID)
           |> visual.Compositor.CreateCustomVisual
         ElementComposition.SetElementChildVisual (x, composedVisual)
         composedVisual.Size <- Vector2 (float32 x.Bounds.Width, float32 x.Bounds.Height)
