@@ -58,13 +58,19 @@ void main() {
 
 """
 
+  let fragmentShaderBlack = """
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  fragColor = vec4(0.,0.,0.,1.);
+}
+"""
+
   let fragmentShaderRed = """
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = vec4(1.,0.,0.,1.);
 }
 """
 
-  let fragmentShaderSimplePresenter = """
+  let fragmentShaderFaderPresenter = """
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 q = fragCoord/iResolution.xy;
   q.y = 1. - q.y;

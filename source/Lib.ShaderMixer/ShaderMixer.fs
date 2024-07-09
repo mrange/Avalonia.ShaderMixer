@@ -1246,6 +1246,25 @@ module Mixer =
 
   let noBitmapImages  : Map<BitmapImageID , MixerBitmapImage > = Map.empty
 
+  let blackSceneID = SceneID "black"
+  let blackScene : MixerScene =
+    {
+      Common          = None
+      Defines         = [||]
+      BufferA         = None
+      BufferB         = None
+      BufferC         = None
+      BufferD         = None
+      Image           =
+        {
+          FragmentSource  = ShaderSources.fragmentShaderBlack
+          Channel0        = None
+          Channel1        = None
+          Channel2        = None
+          Channel3        = None
+        }
+    }
+
   let redSceneID = SceneID "red"
   let redScene : MixerScene =
     {
@@ -1266,10 +1285,10 @@ module Mixer =
     }
 
 
-  let simplePresenterID = PresenterID "simple"
-  let simplePresenter : MixerPresenter =
+  let faderPresenterID = PresenterID "fader"
+  let faderPresenter : MixerPresenter =
     {
-      FragmentSource  = ShaderSources.fragmentShaderSimplePresenter
+      FragmentSource  = ShaderSources.fragmentShaderFaderPresenter
       Defines         = [||]
       Channel0        =
         {
@@ -1285,5 +1304,5 @@ module Mixer =
 
   let defaultPresenters : Map<PresenterID, MixerPresenter> =
     [|
-      simplePresenterID, simplePresenter
+      faderPresenterID, faderPresenter
     |] |> Map.ofArray

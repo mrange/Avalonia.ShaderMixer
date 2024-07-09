@@ -19,10 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses
 module Scenes
 open Lib.ShaderMixer
 
-let presenterID     = Mixer.simplePresenterID
-
+let faderID         = Mixer.faderPresenterID
+let blackID         = Mixer.redSceneID
 let redID           = Mixer.redSceneID
 let gravitySucksID  = SceneID "gravitySucks"
+
 let gravitySucks    =
   {
     Defines = [||]
@@ -41,13 +42,23 @@ let gravitySucks    =
       }
   }
 
-let mixer =
+let mixer : Mixer =
   {
     NamedBitmapImages = Map.empty
     NamedPresenters = Mixer.defaultPresenters
     NamedScenes =
       [|
-        gravitySucksID    , gravitySucks
-        Mixer.redSceneID , Mixer.redScene
+        Mixer.blackSceneID , Mixer.blackScene
+        Mixer.redSceneID   , Mixer.redScene
+        gravitySucksID     , gravitySucks
       |] |> Map.ofArray
+    BPM           = 60
+    LengthInBeats = 60
+    Script        =
+      [|
+        0   , SelectPresenter faderID
+        0   , SelectStage0    blackID
+        0   , SelectStage1    gravitySucksID
+        0   , FadeToStage1    4
+      |]
   }
