@@ -662,10 +662,33 @@ module OpenGL =
       | ValueNone     -> ()
       | ValueSome bc  -> renderOpenGLBufferChannel mixer frameNo textureUnitNo bc
 
-    let renderOpenGLSceneBuffer (mixer : OpenGLMixer) (time : float32) (frameNo : int) (bufferTexture : OpenGLBufferTexture) (sceneBuffer : OpenGLSceneBuffer) : unit =
+    let renderProgram (mixer : OpenGLMixer) (time : float32) mixLocation resolutionLocation timeLocation =
       let gl    = mixer.Gl
       let glext = mixer.GlExt
 
+      match mixLocation with
+      | ValueNone   -> ()
+      | ValueSome tl->
+        gl.Uniform1f (tl.UniformLocationID, 0.F)
+        checkGL gl
+
+      match resolutionLocation with
+      | ValueNone   -> ()
+      | ValueSome rl->
+        glext.Uniform2f (rl.UniformLocationID, mixer.Resolution.X, float32 mixer.Resolution.Y)
+        checkGL gl
+
+      match timeLocation with
+      | ValueNone   -> ()
+      | ValueSome tl->
+        gl.Uniform1f (tl.UniformLocationID, time)
+        checkGL gl
+
+      gl.DrawElements (GL_TRIANGLES, indices.Length, GL_UNSIGNED_SHORT, 0)
+      checkGL gl
+
+    let renderOpenGLSceneBuffer (mixer : OpenGLMixer) (time : float32) (frameNo : int) (bufferTexture : OpenGLBufferTexture) (sceneBuffer : OpenGLSceneBuffer) : unit =
+      let gl    = mixer.Gl
 
       let targetTexture = bufferTexture.ForegroundTexture frameNo
 
@@ -680,20 +703,7 @@ module OpenGL =
       renderOpenGLBufferChannel' mixer frameNo 2 sceneBuffer.Channel2
       renderOpenGLBufferChannel' mixer frameNo 3 sceneBuffer.Channel3
 
-      match sceneBuffer.TimeLocation with
-      | ValueNone   -> ()
-      | ValueSome tl->
-        gl.Uniform1f (tl.UniformLocationID, time)
-        checkGL gl
-
-      match sceneBuffer.ResolutionLocation with
-      | ValueNone   -> ()
-      | ValueSome rl->
-        glext.Uniform2f (rl.UniformLocationID, mixer.Resolution.X, float32 mixer.Resolution.Y)
-        checkGL gl
-
-      gl.DrawElements (GL_TRIANGLES, indices.Length, GL_UNSIGNED_SHORT, 0)
-      checkGL gl
+      renderProgram mixer time sceneBuffer.MixLocation sceneBuffer.ResolutionLocation sceneBuffer.TimeLocation
 
     let renderOpenGLSceneBuffer' (mixer : OpenGLMixer) (time : float32) (frameNo : int) (bufferTexture : OpenGLBufferTexture) (sceneBuffer : OpenGLSceneBuffer voption) : unit =
       match sceneBuffer with
@@ -709,20 +719,7 @@ module OpenGL =
 
       renderOpenGLBufferChannel mixer frameNo 0 presenter.Channel0
 
-      match presenter.TimeLocation with
-      | ValueNone   -> ()
-      | ValueSome tl->
-        gl.Uniform1f (tl.UniformLocationID, time)
-        checkGL gl
-
-      match presenter.ResolutionLocation with
-      | ValueNone   -> ()
-      | ValueSome rl->
-        glext.Uniform2f (rl.UniformLocationID, mixer.Resolution.X, float32 mixer.Resolution.Y)
-        checkGL gl
-
-      gl.DrawElements (GL_TRIANGLES, indices.Length, GL_UNSIGNED_SHORT, 0)
-      checkGL gl
+      renderProgram mixer time presenter.MixLocation presenter.ResolutionLocation presenter.TimeLocation
 
   open Internals
 
