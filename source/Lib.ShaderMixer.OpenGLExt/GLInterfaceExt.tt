@@ -1,0 +1,95 @@
+﻿namespace Lib.ShaderMixer.OpenGLExt;
+using global::Avalonia.OpenGL;
+
+<#
+  (string Args, string Name)[] model = new [] 
+  {
+    ("IntPtr,IntPtr,void"     , "DebugMessageCallback")
+  , ("int,void"               , "Disable")
+  , ("int,int*,void"          , "GetIntegerv")
+  , ("int,int,void"           , "Uniform1i")
+  , ("int,float,float,void"   , "Uniform2f")
+  };
+  var prelude = "";
+#>
+
+public unsafe partial class GlInterfaceExt
+{
+<# foreach (var m in model) { #>
+  // <#=m.Name#>
+  readonly <#=GetFieldType(m.Args)#> <#=GetFieldName(m.Name)#>;
+  
+<# } #>
+
+  public GlInterfaceExt(GlInterface glInterface)
+  {
+    var addr = IntPtr.Zero;
+
+<# foreach (var m in model) { #>
+    // <#=m.Name#>
+    addr = glInterface.GetProcAddress("<#=GetGlName(m.Name)#>");
+    if (addr == IntPtr.Zero)
+    {
+      throw new EntryPointNotFoundException("<#=GetGlName(m.Name)#>");
+    }
+    <#=GetFieldName(m.Name)#> = (<#=GetFieldType(m.Args)#>)addr;
+
+  
+<# } #>
+  }
+
+<# foreach (var m in model) { #>
+  // <#=m.Name#>
+<#
+  var argTypes = GetArgTypes(m.Args);
+  
+  if (argTypes.Length == 0) {
+#>
+    ARGS_NOT_RIGHT_<#=m.Args#>
+<#
+  } else {
+    var retType = argTypes[argTypes.Length-1];
+#>
+  public <#=retType#> <#=m.Name#>(
+<# prelude = "  "; #>
+<# for (var i = 0; i < argTypes.Length - 1; ++i) { #>
+<# var argType = argTypes[i]; #>
+    <#=prelude#><#=argType#> v<#=i#> 
+<# prelude = ", "; #>
+<# } #>
+    )
+  {
+    <#=retType == "void" ? "" : "return "#><#=GetFieldName(m.Name)#>(
+<# prelude = "  "; #>
+<# for (var i = 0; i < argTypes.Length - 1; ++i) { #>
+    <#=prelude#>v<#=i#> 
+<# prelude = ", "; #>
+<# } #>
+    );
+  }
+<# } #>
+
+<# } #>
+}
+
+<#+
+  static string GetGlName(string name)
+  {
+    return "gl" + name;
+  }
+
+  static string GetFieldName(string name)
+  {
+    return "_addr_" + name;
+  }
+
+  static string GetFieldType(string args)
+  {
+    return "delegate* unmanaged[Stdcall]<" + args + ">";
+  }
+
+  static string[] GetArgTypes(string args)
+  {
+    return args.Split(',');
+  }
+#>

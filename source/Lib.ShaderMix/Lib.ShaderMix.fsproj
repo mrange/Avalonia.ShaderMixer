@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants);CAPTURE_OPENGL_LOGS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ShaderSources.fs" />
+    <Compile Include="ShaderMixer.fs" />
+    <Compile Include="ShaderMixerControl.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.1.0-rc2" />
+    <PackageReference Include="Avalonia.Skia" Version="11.1.0-rc2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Lib.ShaderMixer.OpenGLExt\Lib.ShaderMixer.OpenGLExt.csproj" />
+  </ItemGroup>
+
+  </Project>
