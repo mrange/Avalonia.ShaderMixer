@@ -66,14 +66,14 @@ public struct GetValues<T>
 public unsafe partial class GlInterfaceExt
 {
   public GetValues<int> GetIntegerv(
-      int v0 
+      int v0
     )
   {
     GetValues<int> vs = default;
     vs.Id = v0;
 
     _addr_GetIntegerv(
-      v0 
+      v0
     , vs.Values.AsPtr()
     );
     return vs;

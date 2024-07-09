@@ -1,6 +1,6 @@
 (*
 ShaderMixer for Avalonia - Mixes ShaderToy like shaders
-Copyright (C) 2024  Mårten Rånge
+Copyright (C) 2024  Mï¿½rten Rï¿½nge
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -23,8 +23,8 @@ open Avalonia
 
 module Program =
 
-  [<CompiledName "BuildAvaloniaApp">] 
-  let buildAvaloniaApp () = 
+  [<CompiledName "BuildAvaloniaApp">]
+  let buildAvaloniaApp () =
     AppBuilder
         .Configure<App>()
         .UsePlatformDetect()

@@ -23,7 +23,7 @@ let presenterID     = Mixer.simplePresenterID
 
 let redID           = Mixer.redSceneID
 let gravitySucksID  = SceneID "gravitySucks"
-let gravitySucks    = 
+let gravitySucks    =
   {
     Defines = [||]
     Common  = None
@@ -31,7 +31,7 @@ let gravitySucks    =
     BufferB = None
     BufferC = None
     BufferD = None
-    Image   = 
+    Image   =
       {
         FragmentSource  = ShaderSources.gravitySucks
         Channel0        = None
@@ -40,8 +40,8 @@ let gravitySucks    =
         Channel3        = None
       }
   }
-    
-let mixer = 
+
+let mixer =
   {
     NamedBitmapImages = Map.empty
     NamedPresenters = Mixer.defaultPresenters

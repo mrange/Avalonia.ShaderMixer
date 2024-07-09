@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses
 *)
 
 module ShaderSources
-// While 'ShaderMixer for Avalonia' is GPL v3 this license is not intended 
+// While 'ShaderMixer for Avalonia' is GPL v3 this license is not intended
 //  to apply to the shader sources found here. Many might be prior art
 //  found on ShaderToy that have their own individual license which I have no right
 //  or want to relicense to GPL v3
@@ -54,9 +54,9 @@ float bounce(float t, float dy, float dropOff) {
   float p0 = 2.*dy/g;
 
   t += p0/2.;
-    
+
   float ldo = log(dropOff);
-    
+
   float yy = 1. - (1. - dropOff) * t / p0;
 
   if (yy > 1e-4)  {
@@ -79,7 +79,7 @@ vec3 ball(vec3 col, vec2 pp, vec2 p, float r, float pal) {
   const vec3 speDir = normalize(vec3(1., 2., 1.));
   vec3 p3 = vec3(pp, 0.);
   vec3 rd = normalize(p3-ro);
-  
+
   vec3 bcol = .5+.5*sin(0.5*vec3(0., 1., 2.)+TAU*pal);
   float aa = sqrt(8.)/RESOLUTION.y;
   float z2 = (r*r-dot(p, p));
@@ -90,12 +90,12 @@ vec3 ball(vec3 col, vec2 pp, vec2 p, float r, float pal) {
     vec3 cr = reflect(rd, cn);
     float cd= max(dot(difDir, cn), 0.0);
     float cs= 1.008-dot(cr, speDir);
-    
+
     vec3 ccol = mix(.1, 1.,cd*cd)*bcol+sqrt(bcol)*(1E-2/cs);
     float d = length(p)-r;
     col = mix(col, ccol, smoothstep(0., -aa, d));
   }
-  
+
   return col;
 }
 
@@ -139,12 +139,12 @@ vec3 effect(vec2 p) {
     p0.y -= b+radii;
     col = ball(col, p, p0, radii, ch1);
   }
-  
+
   if (sy < 0.) {
     col *= mix(sqrt(vec3(.05, .1, .2)), vec3(.05, .1, .2), p.y);
     col += .1*vec3(0., 0., 1.)*max(p.y*p.y, 0.);
   }
-  
+
   col = sqrt(col);
   return col;
 }

@@ -24,19 +24,19 @@ public unsafe partial class GlInterfaceExt
 {
   // DebugMessageCallback
   readonly delegate* unmanaged[Stdcall]<IntPtr,IntPtr,void> _addr_DebugMessageCallback;
-  
+
   // Disable
   readonly delegate* unmanaged[Stdcall]<int,void> _addr_Disable;
-  
+
   // GetIntegerv
   readonly delegate* unmanaged[Stdcall]<int,int*,void> _addr_GetIntegerv;
-  
+
   // Uniform1i
   readonly delegate* unmanaged[Stdcall]<int,int,void> _addr_Uniform1i;
-  
+
   // Uniform2f
   readonly delegate* unmanaged[Stdcall]<int,float,float,void> _addr_Uniform2f;
-  
+
 
   public GlInterfaceExt(GlInterface glInterface)
   {
@@ -50,7 +50,7 @@ public unsafe partial class GlInterfaceExt
     }
     _addr_DebugMessageCallback = (delegate* unmanaged[Stdcall]<IntPtr,IntPtr,void>)addr;
 
-  
+
     // Disable
     addr = glInterface.GetProcAddress("glDisable");
     if (addr == IntPtr.Zero)
@@ -59,7 +59,7 @@ public unsafe partial class GlInterfaceExt
     }
     _addr_Disable = (delegate* unmanaged[Stdcall]<int,void>)addr;
 
-  
+
     // GetIntegerv
     addr = glInterface.GetProcAddress("glGetIntegerv");
     if (addr == IntPtr.Zero)
@@ -68,7 +68,7 @@ public unsafe partial class GlInterfaceExt
     }
     _addr_GetIntegerv = (delegate* unmanaged[Stdcall]<int,int*,void>)addr;
 
-  
+
     // Uniform1i
     addr = glInterface.GetProcAddress("glUniform1i");
     if (addr == IntPtr.Zero)
@@ -77,7 +77,7 @@ public unsafe partial class GlInterfaceExt
     }
     _addr_Uniform1i = (delegate* unmanaged[Stdcall]<int,int,void>)addr;
 
-  
+
     // Uniform2f
     addr = glInterface.GetProcAddress("glUniform2f");
     if (addr == IntPtr.Zero)
@@ -86,66 +86,66 @@ public unsafe partial class GlInterfaceExt
     }
     _addr_Uniform2f = (delegate* unmanaged[Stdcall]<int,float,float,void>)addr;
 
-  
+
   }
 
   // DebugMessageCallback
   public void DebugMessageCallback(
-      IntPtr v0 
-    , IntPtr v1 
+      IntPtr v0
+    , IntPtr v1
     )
   {
     _addr_DebugMessageCallback(
-      v0 
-    , v1 
+      v0
+    , v1
     );
   }
 
   // Disable
   public void Disable(
-      int v0 
+      int v0
     )
   {
     _addr_Disable(
-      v0 
+      v0
     );
   }
 
   // GetIntegerv
   public void GetIntegerv(
-      int v0 
-    , int* v1 
+      int v0
+    , int* v1
     )
   {
     _addr_GetIntegerv(
-      v0 
-    , v1 
+      v0
+    , v1
     );
   }
 
   // Uniform1i
   public void Uniform1i(
-      int v0 
-    , int v1 
+      int v0
+    , int v1
     )
   {
     _addr_Uniform1i(
-      v0 
-    , v1 
+      v0
+    , v1
     );
   }
 
   // Uniform2f
   public void Uniform2f(
-      int v0 
-    , float v1 
-    , float v2 
+      int v0
+    , float v1
+    , float v2
     )
   {
     _addr_Uniform2f(
-      v0 
-    , v1 
-    , v2 
+      v0
+    , v1
+    , v2
     );
   }
 

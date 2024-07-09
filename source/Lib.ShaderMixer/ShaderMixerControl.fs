@@ -67,7 +67,7 @@ module internal Internals =
           match sm with
           | ChangePresenterMessage      pid         -> presenterID    <- pid
           | ChangeRenderScalingMessage  rs          -> renderScaling  <- rs
-          | ChangeSceneMessage          (sid0,sid1) -> 
+          | ChangeSceneMessage          (sid0,sid1) ->
             scene0ID <- sid0
             scene1ID <- sid1
           | DisposeMessage                          -> dispose ()
@@ -77,7 +77,7 @@ module internal Internals =
 
       override x.OnRender context =
         x.RegisterForNextAnimationFrameUpdate ()
-        
+
         let bounds      = x.GetRenderBounds ()
         let pixelRect   = PixelRect.FromRect (bounds, renderScaling)
 
@@ -90,7 +90,7 @@ module internal Internals =
             use skiaLease = skiaLeaseFeature.Lease ()
 
             if not (isNull skiaLease.GrContext) then
-              
+
               use platformLease = skiaLease.TryLeasePlatformGraphicsApi ()
 
               match platformLease with
@@ -101,11 +101,11 @@ module internal Internals =
                   let gl = glContext.GlInterface
                   let resolution = Vector2 (float32 pixelRect.Width, float32 pixelRect.Height)
 
-                  let oglm = 
+                  let oglm =
                     match OpenGLMixer with
-                    | ValueNone       -> 
+                    | ValueNone       ->
                       Mixer.setupOpenGLMixer glContext gl resolution mixer
-                    | ValueSome oglm -> 
+                    | ValueSome oglm ->
                       if not (oglm.ContextIsSame glContext) then
                         Mixer.tearDownOpenGLMixer oglm
                         Mixer.setupOpenGLMixer glContext gl resolution mixer
@@ -116,15 +116,15 @@ module internal Internals =
                         oglm
 
                   OpenGLMixer <- ValueSome oglm
-                  
+
                   let time = float32 start.ElapsedMilliseconds/1000.F
-                  Mixer.renderOpenGLMixer 
-                    pixelRect 
+                  Mixer.renderOpenGLMixer
+                    pixelRect
                     0.0F
-                    time 
-                    frameNo 
-                    oglm 
-                    presenterID 
+                    time
+                    frameNo
+                    oglm
+                    presenterID
                     scene0ID
                     scene1ID
 
@@ -147,9 +147,9 @@ type ShaderMixerControl(mixer: Mixer, initialPresenter : PresenterID, initialSce
     let mutable renderScaling                                       = 1.
 
 
-    member x.RenderScaling 
+    member x.RenderScaling
       with get () = renderScaling
-      and  set v  = 
+      and  set v  =
         renderScaling <- v
         match shaderMixerVisual with
         | ValueNone     -> ()
