@@ -168,7 +168,7 @@ type OpenGLMixerBitmapImage =
     Texture     : OpenGLTexture
   }
 
-type OpenGLBufferTexture = 
+type OpenGLStageTexture = 
   {
     Texture0 : OpenGLTexture
     Texture1 : OpenGLTexture
@@ -236,13 +236,13 @@ type OpenGLMixerScene =
     Image           : OpenGLSceneBuffer
   }
 
-type OpenGLStage =
+type OpenGLMixerStage =
   {
-    BufferA           : OpenGLBufferTexture
-    BufferB           : OpenGLBufferTexture
-    BufferC           : OpenGLBufferTexture
-    BufferD           : OpenGLBufferTexture
-    Image             : OpenGLBufferTexture
+    BufferA           : OpenGLStageTexture
+    BufferB           : OpenGLStageTexture
+    BufferC           : OpenGLStageTexture
+    BufferD           : OpenGLStageTexture
+    Image             : OpenGLStageTexture
   }
 
 type OpenGLMixer =
@@ -254,8 +254,8 @@ type OpenGLMixer =
     NamedPresenters   : Map<PresenterID   , OpenGLMixerPresenter   >
     NamedScenes       : Map<SceneID       , OpenGLMixerScene       >
 
-    Stage0            : OpenGLStage
-    Stage1            : OpenGLStage
+    Stage0            : OpenGLMixerStage
+    Stage1            : OpenGLMixerStage
 
     FrameBuffer       : OpenGLFrameBuffer
     IndexBuffer       : OpenGLBuffer
@@ -427,7 +427,7 @@ module Mixer =
 
       texture
 
-    let createOpenGLBufferTexture (gl : GlInterface) (resolution : Vector2) : OpenGLBufferTexture =
+    let createOpenGLStageTexture (gl : GlInterface) (resolution : Vector2) : OpenGLStageTexture =
       {
         Texture0 = createTexture gl resolution
         Texture1 = createTexture gl resolution
@@ -562,13 +562,13 @@ module Mixer =
         Texture           = createTextureFromBitmapImage gl mixerBitmapImage
       }
 
-    let createOpenGLStage (gl : GlInterface) (resolution : Vector2) : OpenGLStage =
+    let createOpenGLMixerStage (gl : GlInterface) (resolution : Vector2) : OpenGLMixerStage =
       {
-        BufferA           = createOpenGLBufferTexture gl resolution
-        BufferB           = createOpenGLBufferTexture gl resolution
-        BufferC           = createOpenGLBufferTexture gl resolution
-        BufferD           = createOpenGLBufferTexture gl resolution
-        Image             = createOpenGLBufferTexture gl resolution
+        BufferA           = createOpenGLStageTexture gl resolution
+        BufferB           = createOpenGLStageTexture gl resolution
+        BufferC           = createOpenGLStageTexture gl resolution
+        BufferD           = createOpenGLStageTexture gl resolution
+        Image             = createOpenGLStageTexture gl resolution
       }
 
     let tearDownOpenGLBufferChannel (mixer : OpenGLMixer) (bufferChannel : OpenGLBufferChannel) : unit =
@@ -582,13 +582,13 @@ module Mixer =
     let tearDownOpenGLPresenterChannel (mixer : OpenGLMixer) (presenterChannel : OpenGLPresenterChannel) : unit =
       ()
 
-    let tearDownOpenGLBufferTexture (mixer : OpenGLMixer) (bufferTexture : OpenGLBufferTexture) : unit =
+    let tearDownOpenGLStageTexture (mixer : OpenGLMixer) (stageTexture : OpenGLStageTexture) : unit =
       let gl    = mixer.Gl
 
-      gl.DeleteTexture bufferTexture.Texture1.TextureID
+      gl.DeleteTexture stageTexture.Texture1.TextureID
       assertGL gl
 
-      gl.DeleteTexture bufferTexture.Texture0.TextureID
+      gl.DeleteTexture stageTexture.Texture0.TextureID
       assertGL gl
 
     let tearDownOpenGLMixerBitmapImage (mixer : OpenGLMixer) (mixerBitmapImage : OpenGLMixerBitmapImage) : unit =
@@ -641,28 +641,28 @@ module Mixer =
       gl.DeleteShader  mixerPresenter.VertexShader.ShaderID
       assertGL gl
 
-    let tearDownOpenGLStage (mixer : OpenGLMixer) (stage : OpenGLStage) : unit =
-      tearDownOpenGLBufferTexture mixer stage.Image
-      tearDownOpenGLBufferTexture mixer stage.BufferD
-      tearDownOpenGLBufferTexture mixer stage.BufferC
-      tearDownOpenGLBufferTexture mixer stage.BufferB
-      tearDownOpenGLBufferTexture mixer stage.BufferA
+    let tearDownOpenGLMixerStage (mixer : OpenGLMixer) (stage : OpenGLMixerStage) : unit =
+      tearDownOpenGLStageTexture mixer stage.Image
+      tearDownOpenGLStageTexture mixer stage.BufferD
+      tearDownOpenGLStageTexture mixer stage.BufferC
+      tearDownOpenGLStageTexture mixer stage.BufferB
+      tearDownOpenGLStageTexture mixer stage.BufferA
 
-    let resizeOpenGLBufferTexture (mixer : OpenGLMixer) (resolution : Vector2) (bufferTexture : OpenGLBufferTexture) : OpenGLBufferTexture =
+    let resizeOpenGLStageTexture (mixer : OpenGLMixer) (resolution : Vector2) (stageTexture : OpenGLStageTexture) : OpenGLStageTexture =
       let gl = mixer.Gl
 
-      tearDownOpenGLBufferTexture mixer bufferTexture
-      createOpenGLBufferTexture   gl    resolution
+      tearDownOpenGLStageTexture mixer stageTexture
+      createOpenGLStageTexture   gl    resolution
 
-    let resizeOpenGLStage (mixer : OpenGLMixer) (resolution : Vector2) (stage : OpenGLStage) : OpenGLStage =
+    let resizeOpenGLMixerStage (mixer : OpenGLMixer) (resolution : Vector2) (stage : OpenGLMixerStage) : OpenGLMixerStage =
       let gl = mixer.Gl
 
       {
-        BufferA     = resizeOpenGLBufferTexture mixer resolution stage.BufferA 
-        BufferB     = resizeOpenGLBufferTexture mixer resolution stage.BufferB
-        BufferC     = resizeOpenGLBufferTexture mixer resolution stage.BufferC 
-        BufferD     = resizeOpenGLBufferTexture mixer resolution stage.BufferD
-        Image       = resizeOpenGLBufferTexture mixer resolution stage.Image
+        BufferA     = resizeOpenGLStageTexture mixer resolution stage.BufferA 
+        BufferB     = resizeOpenGLStageTexture mixer resolution stage.BufferB
+        BufferC     = resizeOpenGLStageTexture mixer resolution stage.BufferC 
+        BufferD     = resizeOpenGLStageTexture mixer resolution stage.BufferD
+        Image       = resizeOpenGLStageTexture mixer resolution stage.Image
       }
 
     let renderOpenGLTexture (mixer : OpenGLMixer) (textureUnitNo : int) (sourceTexture : OpenGLTexture) loc filter wrap: unit =
@@ -701,7 +701,7 @@ module Mixer =
       glext.Uniform1i (loc.UniformLocationID, textureUnitNo)
       checkGL gl
 
-    let renderOpenGLBufferChannel (mixer : OpenGLMixer) (stage : OpenGLStage) (frameNo : int) (textureUnitNo : int) (bufferChannel : OpenGLBufferChannel) : unit =
+    let renderOpenGLBufferChannel (mixer : OpenGLMixer) (stage : OpenGLMixerStage) (frameNo : int) (textureUnitNo : int) (bufferChannel : OpenGLBufferChannel) : unit =
       match bufferChannel.Location with
       | ValueNone     ->  ()
       | ValueSome loc ->
@@ -717,7 +717,7 @@ module Mixer =
             image.Texture
         renderOpenGLTexture mixer textureUnitNo sourceTexture loc bufferChannel.BufferChannel.Filter bufferChannel.BufferChannel.Wrap
 
-    let renderOpenGLPresenterChannel (mixer : OpenGLMixer) (frameNo : int) (stage : OpenGLStage)  (textureUnitNo : int) (presenterChannel : OpenGLPresenterChannel) : unit =
+    let renderOpenGLPresenterChannel (mixer : OpenGLMixer) (frameNo : int) (stage : OpenGLMixerStage)  (textureUnitNo : int) (presenterChannel : OpenGLPresenterChannel) : unit =
       match presenterChannel.Location with
       | ValueNone     ->  ()
       | ValueSome loc ->
@@ -727,7 +727,7 @@ module Mixer =
 
       ()
 
-    let renderOpenGLBufferChannel' (mixer : OpenGLMixer) (stage : OpenGLStage) (frameNo : int) (textureUnitNo : int) (bufferChannel : OpenGLBufferChannel voption) : unit =
+    let renderOpenGLBufferChannel' (mixer : OpenGLMixer) (stage : OpenGLMixerStage) (frameNo : int) (textureUnitNo : int) (bufferChannel : OpenGLBufferChannel voption) : unit =
       match bufferChannel with
       | ValueNone     -> ()
       | ValueSome bc  -> renderOpenGLBufferChannel mixer stage frameNo textureUnitNo bc
@@ -757,10 +757,10 @@ module Mixer =
       gl.DrawElements (GL_TRIANGLES, indices.Length, GL_UNSIGNED_SHORT, 0)
       checkGL gl
 
-    let renderOpenGLSceneBuffer (mixer : OpenGLMixer) (stage : OpenGLStage) (time : float32) (frameNo : int) (bufferTexture : OpenGLBufferTexture) (sceneBuffer : OpenGLSceneBuffer) : unit =
+    let renderOpenGLSceneBuffer (mixer : OpenGLMixer) (stage : OpenGLMixerStage) (time : float32) (frameNo : int) (stageTexture : OpenGLStageTexture) (sceneBuffer : OpenGLSceneBuffer) : unit =
       let gl    = mixer.Gl
 
-      let targetTexture = bufferTexture.ForegroundTexture frameNo
+      let targetTexture = stageTexture.ForegroundTexture frameNo
 
       gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, targetTexture.TextureID, 0)
       checkGL gl
@@ -775,12 +775,19 @@ module Mixer =
 
       renderProgram mixer 0.F time sceneBuffer.MixLocation sceneBuffer.ResolutionLocation sceneBuffer.TimeLocation
 
-    let renderOpenGLSceneBuffer' (mixer : OpenGLMixer) (stage : OpenGLStage) (time : float32) (frameNo : int) (bufferTexture : OpenGLBufferTexture) (sceneBuffer : OpenGLSceneBuffer voption) : unit =
+    let renderOpenGLSceneBuffer' (mixer : OpenGLMixer) (stage : OpenGLMixerStage) (time : float32) (frameNo : int) (stageTexture : OpenGLStageTexture) (sceneBuffer : OpenGLSceneBuffer voption) : unit =
       match sceneBuffer with
       | ValueNone     -> ()
-      | ValueSome sb  -> renderOpenGLSceneBuffer mixer stage time frameNo bufferTexture sb
+      | ValueSome sb  -> renderOpenGLSceneBuffer mixer stage time frameNo stageTexture sb
 
-    let renderOpenGLMixerPresenter (mixer : OpenGLMixer) (mix : float32) (time : float32) (frameNo : int) (stage0 : OpenGLStage) (stage1 : OpenGLStage) (mixerPresenter : OpenGLMixerPresenter) : unit =
+    let renderOpenGLMixerStage (mixer : OpenGLMixer) (time : float32) (frameNo : int) (stage : OpenGLMixerStage) (scene : OpenGLMixerScene) : unit =
+      renderOpenGLSceneBuffer' mixer stage time frameNo stage.BufferA scene.BufferA
+      renderOpenGLSceneBuffer' mixer stage time frameNo stage.BufferB scene.BufferB
+      renderOpenGLSceneBuffer' mixer stage time frameNo stage.BufferC scene.BufferC
+      renderOpenGLSceneBuffer' mixer stage time frameNo stage.BufferD scene.BufferD
+      renderOpenGLSceneBuffer  mixer stage time frameNo stage.Image   scene.Image
+
+    let renderOpenGLMixerPresenter (mixer : OpenGLMixer) (mix : float32) (time : float32) (frameNo : int) (stage0 : OpenGLMixerStage) (stage1 : OpenGLMixerStage) (mixerPresenter : OpenGLMixerPresenter) : unit =
       let gl    = mixer.Gl
       let glext = mixer.GlExt
 
@@ -871,8 +878,8 @@ module Mixer =
       NamedBitmapImages = namedBitmapImages
       NamedPresenters   = namedPresenters
       NamedScenes       = namedScenes
-      Stage0            = createOpenGLStage gl resolution
-      Stage1            = createOpenGLStage gl resolution
+      Stage0            = createOpenGLMixerStage gl resolution
+      Stage1            = createOpenGLMixerStage gl resolution
       FrameBuffer       = frameBuffer
       IndexBuffer       = indexBuffer
       VertexBuffer      = vertexBuffer
@@ -897,8 +904,8 @@ module Mixer =
 #endif
 #endif
 
-    tearDownOpenGLStage mixer mixer.Stage1
-    tearDownOpenGLStage mixer mixer.Stage0
+    tearDownOpenGLMixerStage mixer mixer.Stage1
+    tearDownOpenGLMixerStage mixer mixer.Stage0
 
     for kv in mixer.NamedScenes do
       let scene = kv.Value
@@ -944,8 +951,8 @@ module Mixer =
 
     { mixer with 
         Resolution  = resolution
-        Stage0      = resizeOpenGLStage mixer resolution mixer.Stage0
-        Stage1      = resizeOpenGLStage mixer resolution mixer.Stage1
+        Stage0      = resizeOpenGLMixerStage mixer resolution mixer.Stage0
+        Stage1      = resizeOpenGLMixerStage mixer resolution mixer.Stage1
     }
 
   let renderOpenGLMixer (view : PixelRect) (mix : float32) (time : float32) (frameNo : int) (mixer : OpenGLMixer) (presenterID : PresenterID) (scene0ID : SceneID) (scene1ID : SceneID) : unit =
@@ -985,11 +992,11 @@ module Mixer =
     gl.BindVertexArray mixer.VertexArray.VertexArrayID
     checkGL gl
 
-    renderOpenGLSceneBuffer' mixer stage0 time frameNo stage0.BufferA scene0.BufferA
-    renderOpenGLSceneBuffer' mixer stage0 time frameNo stage0.BufferB scene0.BufferB
-    renderOpenGLSceneBuffer' mixer stage0 time frameNo stage0.BufferC scene0.BufferC
-    renderOpenGLSceneBuffer' mixer stage0 time frameNo stage0.BufferD scene0.BufferD
-    renderOpenGLSceneBuffer  mixer stage0 time frameNo stage0.Image   scene0.Image
+    if mix < 1.F then
+      renderOpenGLMixerStage mixer time frameNo stage0 scene0
+
+    if mix > 0.F then
+      renderOpenGLMixerStage mixer time frameNo stage1 scene1
 
     gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0)
     checkGL gl
