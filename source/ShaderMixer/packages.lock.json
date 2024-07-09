@@ -58,9 +58,9 @@
       },
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[8.0.300, )",
-        "resolved": "8.0.300",
-        "contentHash": "Jv44fV7TNglyMku89lQcA4Q6mFKLyHb2bs1Yb72nvSVc+cHplEnoZ4XQUaaTLJGUTx/iMqcrkYGtaLzkkIhpaA=="
+        "requested": "[8.0.400-beta.24321.3, )",
+        "resolved": "8.0.400-beta.24321.3",
+        "contentHash": "iRTyTSKHMIHuq1RYsvEC3Q5/+wrq6J7zcANEpras0+26CR5/GMKSbmlQjF9z6wbS3miQI8/FPbvuygLYAAYeBg=="
       },
       "Avalonia.Angle.Windows.Natives": {
         "type": "Transitive",
@@ -316,7 +316,7 @@
         "dependencies": {
           "Avalonia": "[11.1.0-rc2, )",
           "Avalonia.Skia": "[11.1.0-rc2, )",
-          "FSharp.Core": "[8.0.300, )",
+          "FSharp.Core": "[8.0.400-beta.24321.3, )",
           "Lib.ShaderMixer.OpenGLExt": "[1.0.0, )",
           "Silk.NET.OpenAL": "[2.21.0, )"
         }

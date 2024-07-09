@@ -120,7 +120,7 @@ module internal Internals =
                   let time = float32 start.ElapsedMilliseconds/1000.F
                   Mixer.renderOpenGLMixer 
                     pixelRect 
-                    0.F
+                    0.0F
                     time 
                     frameNo 
                     oglm 

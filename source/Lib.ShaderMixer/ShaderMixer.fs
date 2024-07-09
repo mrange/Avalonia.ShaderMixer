@@ -905,8 +905,8 @@ module Mixer =
 
       match mixLocation with
       | ValueNone   -> ()
-      | ValueSome tl->
-        gl.Uniform1f (tl.UniformLocationID, mix)
+      | ValueSome ml->
+        gl.Uniform1f (ml.UniformLocationID, mix)
         checkGL gl
 
       match resolutionLocation with
@@ -990,7 +990,7 @@ module Mixer =
       checkGL gl
 
       renderOpenGLPresenterChannel mixer frameNo stage0 0 mixerPresenter.Channel0
-      renderOpenGLPresenterChannel mixer frameNo stage1 0 mixerPresenter.Channel1
+      renderOpenGLPresenterChannel mixer frameNo stage1 1 mixerPresenter.Channel1
 
       renderProgram mixer mix time mixerPresenter.MixLocation mixerPresenter.ResolutionLocation mixerPresenter.TimeLocation
 

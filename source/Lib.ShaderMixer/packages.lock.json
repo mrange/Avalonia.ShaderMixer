@@ -30,9 +30,9 @@
       },
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[8.0.300, )",
-        "resolved": "8.0.300",
-        "contentHash": "Jv44fV7TNglyMku89lQcA4Q6mFKLyHb2bs1Yb72nvSVc+cHplEnoZ4XQUaaTLJGUTx/iMqcrkYGtaLzkkIhpaA=="
+        "requested": "[8.0.400-beta.24321.3, )",
+        "resolved": "8.0.400-beta.24321.3",
+        "contentHash": "iRTyTSKHMIHuq1RYsvEC3Q5/+wrq6J7zcANEpras0+26CR5/GMKSbmlQjF9z6wbS3miQI8/FPbvuygLYAAYeBg=="
       },
       "Silk.NET.OpenAL": {
         "type": "Direct",

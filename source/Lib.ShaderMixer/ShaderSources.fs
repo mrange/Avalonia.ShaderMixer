@@ -38,6 +38,7 @@ void main() {
 
 precision highp float;
 
+uniform float iMix;
 uniform float iTime;
 uniform vec2 iResolution;
 uniform sampler2D iChannel0;  
@@ -66,7 +67,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   let fragmentShaderSimplePresenter = """
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 q = fragCoord/iResolution.xy;
-  q.y = 1.-q.y;
-  fragColor = texture(iChannel0, q);
+  q.y = 1. - q.y;
+  vec3 col0 = texture(iChannel0, q).xyz;
+  vec3 col1 = texture(iChannel1, q).xyz;
+  fragColor = vec4(mix(col0, col1, iMix), 1.);
 }
 """
