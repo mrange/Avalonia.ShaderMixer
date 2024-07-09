@@ -33,15 +33,16 @@ module internal Internals =
   type ShaderMixMessage =
   | ChangePresenterMessage      of PresenterID
   | ChangeRenderScalingMessage  of float
-  | ChangeSceneMessage          of SceneID
+  | ChangeSceneMessage          of SceneID*SceneID
   | DisposeMessage
 
-  type ShaderMixerVisual(start : Stopwatch, mixer: Mixer, initialRenderScaling : float, initialPresenter : PresenterID, initialScene : SceneID) =
+  type ShaderMixerVisual(start : Stopwatch, mixer: Mixer, initialRenderScaling : float, initialPresenter : PresenterID, initialScene0 : SceneID, initialScene1 : SceneID) =
     class
       inherit CompositionCustomVisualHandler()
 
       let mutable presenterID                           = initialPresenter
-      let mutable sceneID                               = initialScene
+      let mutable scene0ID                              = initialScene0
+      let mutable scene1ID                              = initialScene1
       let mutable frameNo                               = 0
       let mutable renderScaling                         = initialRenderScaling
       let mutable OpenGLMixer  : OpenGLMixer voption  = ValueNone
@@ -64,11 +65,13 @@ module internal Internals =
         match message with
         | :? ShaderMixMessage as sm ->
           match sm with
-          | ChangePresenterMessage      pid -> presenterID    <- pid
-          | ChangeRenderScalingMessage  rs  -> renderScaling  <- rs
-          | ChangeSceneMessage          sid -> sceneID        <- sid
-          | DisposeMessage                  -> dispose ()
-        | _                                 -> ()
+          | ChangePresenterMessage      pid         -> presenterID    <- pid
+          | ChangeRenderScalingMessage  rs          -> renderScaling  <- rs
+          | ChangeSceneMessage          (sid0,sid1) -> 
+            scene0ID <- sid0
+            scene1ID <- sid1
+          | DisposeMessage                          -> dispose ()
+        | _                                         -> ()
 
         base.OnMessage message
 
@@ -115,7 +118,15 @@ module internal Internals =
                   OpenGLMixer <- ValueSome oglm
                   
                   let time = float32 start.ElapsedMilliseconds/1000.F
-                  Mixer.renderOpenGLMixer pixelRect time frameNo oglm presenterID sceneID
+                  Mixer.renderOpenGLMixer 
+                    pixelRect 
+                    0.F
+                    time 
+                    frameNo 
+                    oglm 
+                    presenterID 
+                    scene0ID
+                    scene1ID
 
                   frameNo <- frameNo + 1
                 | _                           ->
@@ -124,31 +135,17 @@ module internal Internals =
     end
 open Internals
 
-type ShaderMixerControl(mixer: Mixer, initialPresenter : PresenterID, initialScene : SceneID) =
+type ShaderMixerControl(mixer: Mixer, initialPresenter : PresenterID, initialScene0 : SceneID, initialScene1 : SceneID) =
   class
     inherit Control()
 
     let start                                                       = Stopwatch.StartNew ()
     let mutable presenterID                                         = initialPresenter
-    let mutable sceneID                                             = initialScene
+    let mutable scene0ID                                            = initialScene0
+    let mutable scene1ID                                            = initialScene1
     let mutable shaderMixerVisual : CompositionCustomVisual voption = ValueNone
     let mutable renderScaling                                       = 1.
 
-    member x.Presenter
-      with get () = presenterID
-      and  set v  = 
-        presenterID <- v
-        match shaderMixerVisual with
-        | ValueNone     -> ()
-        | ValueSome vis -> vis.SendHandlerMessage (ChangePresenterMessage presenterID)
-
-    member x.Scene
-      with get () = sceneID
-      and  set v  = 
-        sceneID <- v
-        match shaderMixerVisual with
-        | ValueNone     -> ()
-        | ValueSome vis -> vis.SendHandlerMessage (ChangeSceneMessage v)
 
     member x.RenderScaling 
       with get () = renderScaling
@@ -164,7 +161,7 @@ type ShaderMixerControl(mixer: Mixer, initialPresenter : PresenterID, initialSce
       if not (isNull visual) then
         assert shaderMixerVisual.IsNone
         let composedVisual =
-          new ShaderMixerVisual (start, mixer, renderScaling, presenterID, sceneID)
+          new ShaderMixerVisual (start, mixer, renderScaling, presenterID, scene0ID, scene1ID)
           |> visual.Compositor.CreateCustomVisual
         ElementComposition.SetElementChildVisual (x, composedVisual)
         composedVisual.Size <- Vector2 (float32 x.Bounds.Width, float32 x.Bounds.Height)

@@ -35,7 +35,7 @@ type MainWindow () as this =
 #endif
     AvaloniaXamlLoader.Load(this)
 
-    let shaderMixer = ShaderMixerControl (Scenes.mixer, Scenes.presenterID, Scenes.gravitySucksID)
+    let shaderMixer = ShaderMixerControl (Scenes.mixer, Scenes.presenterID, Scenes.gravitySucksID, Scenes.redID)
     shaderMixer.RenderScaling <- this.RenderScaling
 
     match this.GetControl<ContentControl> "_content" with
