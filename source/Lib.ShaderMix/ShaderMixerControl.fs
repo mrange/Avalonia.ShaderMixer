@@ -106,7 +106,8 @@ module internal Internals =
                       if not (oglss.ContextIsSame glContext) then
                         OpenGL.tearDownOpenGLScenes oglss
                         OpenGL.setupOpenGLScenes glContext gl resolution scenes
-                      else if resolution <> oglss.Resolution then
+                      else if  ((frameNo &&& 0x3F) = 0) && resolution <> oglss.Resolution then
+                        // We don't want to resize too often
                         OpenGL.resizeOpenGLScenes resolution oglss
                       else
                         oglss
@@ -114,7 +115,7 @@ module internal Internals =
                   openGLScenes <- ValueSome oglss
                   
                   let time = float32 start.ElapsedMilliseconds/1000.F
-                  OpenGL.renderOpenGLScenes time frameNo oglss presenterID sceneID
+                  OpenGL.renderOpenGLScenes pixelRect time frameNo oglss presenterID sceneID
 
                   frameNo <- frameNo + 1
                 | _                           ->

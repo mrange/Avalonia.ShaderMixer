@@ -28,7 +28,9 @@ open System.Runtime.InteropServices
 open System.Text
 
 open FSharp.NativeInterop
+open FSharp.Core.Printf
 
+open Avalonia
 open Avalonia.OpenGL
 
 open type Avalonia.OpenGL.GlConsts
@@ -248,6 +250,8 @@ type OpenGLScenes =
 
 
 module OpenGL =
+  let trace (msg : string) : unit = Trace.WriteLine ("Lib.ShaderMixer: " + msg)
+  let tracef fmt                  = kprintf trace fmt
   module internal Internals = 
 
     let positionLocation  = 0
@@ -300,14 +304,14 @@ module OpenGL =
     let assertGL (gl : GlInterface) : unit =
 #if DEBUG
       let err = gl.GetError ()
-      assert (err <> GL_NO_ERROR)
+      assert (err = GL_NO_ERROR)
 #else
       ()
 #endif
 
     let traceIntegerv (gl : GlInterface) (glext : GlInterfaceExt) (id : int) : unit =
       let v = gl.GetIntegerv id
-      Trace.WriteLine (sprintf "OpenGL GetIntegerv 0x%x = 0x%x" id v)
+      tracef "GetIntegerv 0x%x = 0x%x" id v
 
     let createAndBindBuffer<'T when 'T : unmanaged> (gl : GlInterface) (target : int) (vs : 'T array) : OpenGLBuffer =
       let elementSize = sizeof<'T>
@@ -738,6 +742,10 @@ module OpenGL =
   open Internals
 
   let setupOpenGLScenes (glContext : IGlContext) (gl : GlInterface) (resolution : Vector2) (scenes : Scenes) : OpenGLScenes =
+#if DEBUG
+    trace "setupOpenGLScenes called"
+#endif
+
     checkGL gl
 
     let glext = GlInterfaceExt gl
@@ -825,6 +833,10 @@ module OpenGL =
     }
 
   let tearDownOpenGLScenes (scenes : OpenGLScenes) : unit =
+#if DEBUG
+    trace "tearDownOpenGLScenes called"
+#endif
+
     let gl = scenes.Gl
     checkGL gl
 
@@ -869,6 +881,10 @@ module OpenGL =
     checkGL gl
 
   let resizeOpenGLScenes (resolution : Vector2) (scenes : OpenGLScenes) : OpenGLScenes =
+#if DEBUG
+    trace "resizeOpenGLScenes called"
+#endif
+
     let gl = scenes.Gl
 
     checkGL gl
@@ -889,7 +905,7 @@ module OpenGL =
         BufferD     = resizeOpenGLBufferTexture scenes resolution scenes.BufferD
     }
 
-  let renderOpenGLScenes (time : float32) (frameNo : int) (scenes : OpenGLScenes) (presenterID : PresenterID) (sceneID : SceneID) : unit =
+  let renderOpenGLScenes (view : PixelRect) (time : float32) (frameNo : int) (scenes : OpenGLScenes) (presenterID : PresenterID) (sceneID : SceneID) : unit =
     let gl    = scenes.Gl
     let glext = scenes.GlExt
 
@@ -906,7 +922,7 @@ module OpenGL =
     let presenter = scenes.NamedPresenters.[presenterID]
     let scene     = scenes.NamedScenes.[sceneID]
 
-    gl.Viewport (0, 0, int scenes.Resolution.X, int scenes.Resolution.Y)
+    gl.Viewport (view.X, view.Y, view.Width, view.Height)
     checkGL gl
 
     let oldFbo = gl.GetIntegerv GL_FRAMEBUFFER_BINDING
