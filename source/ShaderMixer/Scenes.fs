@@ -20,30 +20,34 @@ module Scenes
 open Lib.ShaderMix
 
 let presenterID     = OpenGL.simplePresenterID
+
+let redID           = OpenGL.redSceneID
 let gravitySucksID  = SceneID "gravitySucks"
+let gravitySucks    = 
+  {
+    Defines = [||]
+    Common  = None
+    BufferA = None
+    BufferB = None
+    BufferC = None
+    BufferD = None
+    Image   = 
+      {
+        FragmentSource  = ShaderSources.gravitySucks
+        Channel0        = None
+        Channel1        = None
+        Channel2        = None
+        Channel3        = None
+      }
+  }
     
-let scenes = 
+let mixer = 
   {
     NamedBitmapImages = Map.empty
     NamedPresenters = OpenGL.defaultPresenters
     NamedScenes =
       [|
-          gravitySucksID
-        , {
-            Defines = [||]
-            Common  = None
-            BufferA = None
-            BufferB = None
-            BufferC = None
-            BufferD = None
-            Image   = 
-              {
-                FragmentSource  = ShaderSources.gravitySucks
-                Channel0        = None
-                Channel1        = None
-                Channel2        = None
-                Channel3        = None
-              }
-          }
+        gravitySucksID    , gravitySucks
+        OpenGL.redSceneID , OpenGL.redScene
       |] |> Map.ofArray
   }

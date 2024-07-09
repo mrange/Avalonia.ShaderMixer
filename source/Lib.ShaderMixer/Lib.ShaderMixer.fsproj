@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.1.0-rc2" />
     <PackageReference Include="Avalonia.Skia" Version="11.1.0-rc2" />
+    <PackageReference Include="Silk.NET.OpenAL" Version="2.21.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lib.ShaderMixer.OpenGLExt\Lib.ShaderMixer.OpenGLExt.csproj" />

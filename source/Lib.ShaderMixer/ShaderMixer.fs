@@ -191,8 +191,9 @@ type OpenGLSceneBuffer =
     FragmentShader      : OpenGLShader
     Program             : OpenGLProgram
 
-    TimeLocation        : OpenGLUniformLocation voption
+    MixLocation         : OpenGLUniformLocation voption
     ResolutionLocation  : OpenGLUniformLocation voption
+    TimeLocation        : OpenGLUniformLocation voption
   }
 
 type OpenGLPresenter =
@@ -205,8 +206,9 @@ type OpenGLPresenter =
     FragmentShader      : OpenGLShader
     Program             : OpenGLProgram
 
-    TimeLocation        : OpenGLUniformLocation voption
+    MixLocation         : OpenGLUniformLocation voption
     ResolutionLocation  : OpenGLUniformLocation voption
+    TimeLocation        : OpenGLUniformLocation voption
   }
 
 type OpenGLScene =
@@ -337,7 +339,7 @@ module OpenGL =
 
       buffer
 
-    let createShader (gl : GlInterface) (glEnum : int) (source : string) : OpenGLShader =
+    let createShader (gl : GlInterface) (parentID : string) (glEnum : int) (source : string) : OpenGLShader =
       let shader =
         {
           ShaderID  = gl.CreateShader glEnum
@@ -346,7 +348,7 @@ module OpenGL =
       let error = gl.CompileShaderAndGetError (shader.ShaderID, source)
 
       if not (isNull error) then
-        failwithf "Failed to compile shader due to: %s" error
+        failwithf "Failed to compile %A shader due to: %s" parentID error
       checkGL gl
 
       shader
@@ -442,9 +444,9 @@ module OpenGL =
 
       sb.ToString ()
 
-    let createOpenGLSceneBuffer (gl : GlInterface) (scene : Scene) (sceneBuffer : SceneBuffer) : OpenGLSceneBuffer =
-      let vertexShader    = createShader gl GL_VERTEX_SHADER    ShaderSources.vertexShader
-      let fragmentShader  = createShader gl GL_FRAGMENT_SHADER  <| createFragmentSource scene.Common scene.Defines sceneBuffer.FragmentSource
+    let createProgram (gl : GlInterface) (parentID : string) common defines fragmentSource =
+      let vertexShader    = createShader gl parentID GL_VERTEX_SHADER    ShaderSources.vertexShader
+      let fragmentShader  = createShader gl parentID GL_FRAGMENT_SHADER  <| createFragmentSource common defines fragmentSource
 
       let program         =
         {
@@ -466,11 +468,18 @@ module OpenGL =
 
       let error = gl.LinkProgramAndGetError program.ProgramID
       if not (isNull error) then
-        failwithf "Failed to link shader program due to: %s" error
+        failwithf "Failed to link %A shader program due to: %s" parentID error
       checkGL gl
 
-      let timeUniformLocation       = getUniformLocation gl program "iTime"
+      let mixLocation               = getUniformLocation gl program "iMix"
       let resolutionUniformLocation = getUniformLocation gl program "iResolution"
+      let timeUniformLocation       = getUniformLocation gl program "iTime"
+
+      struct (vertexShader, fragmentShader, program, mixLocation, resolutionUniformLocation, timeUniformLocation)
+
+    let createOpenGLSceneBuffer (gl : GlInterface) (SceneID sceneID) (scene : Scene) (sceneBuffer : SceneBuffer) : OpenGLSceneBuffer =
+      let struct (vertexShader, fragmentShader, program, mixLocation, resolutionUniformLocation, timeUniformLocation) =
+        createProgram gl sceneID scene.Common scene.Defines sceneBuffer.FragmentSource
 
       {
         SceneBuffer         = sceneBuffer
@@ -483,44 +492,19 @@ module OpenGL =
         FragmentShader      = fragmentShader
         Program             = program
 
-        TimeLocation        = timeUniformLocation
+        MixLocation         = mixLocation
         ResolutionLocation  = resolutionUniformLocation
+        TimeLocation        = timeUniformLocation
       }
 
-    let createOpenGLSceneBuffer' (gl : GlInterface) (scene : Scene) (sceneBuffer : SceneBuffer option) : OpenGLSceneBuffer voption =
+    let createOpenGLSceneBuffer' (gl : GlInterface) (sceneID : SceneID) (scene : Scene) (sceneBuffer : SceneBuffer option) : OpenGLSceneBuffer voption =
       match sceneBuffer with 
       | None    -> ValueNone
-      | Some sb -> createOpenGLSceneBuffer gl scene sb |> ValueSome
+      | Some sb -> createOpenGLSceneBuffer gl sceneID scene sb |> ValueSome
 
-    let createOpenGLPresenter (gl : GlInterface) (presenter : Presenter) : OpenGLPresenter =
-      let vertexShader    = createShader gl GL_VERTEX_SHADER    ShaderSources.vertexShader
-      let fragmentShader  = createShader gl GL_FRAGMENT_SHADER  <| createFragmentSource None presenter.Defines presenter.FragmentSource
-
-      let program         =
-        {
-          ProgramID = gl.CreateProgram()
-        }
-      checkGL gl
-
-      gl.AttachShader (program.ProgramID, vertexShader.ShaderID)
-      checkGL gl
-
-      gl.AttachShader (program.ProgramID, fragmentShader.ShaderID)
-      checkGL gl
-
-      gl.BindAttribLocationString (program.ProgramID, positionLocation, "a_position")
-      checkGL gl
-
-      gl.BindAttribLocationString (program.ProgramID, texCoordLocation, "a_texcoord")
-      checkGL gl
-
-      let error = gl.LinkProgramAndGetError program.ProgramID
-      if not (isNull error) then
-        failwithf "Failed to link shader program due to: %s" error
-      checkGL gl
-
-      let timeUniformLocation       = getUniformLocation gl program "iTime"
-      let resolutionUniformLocation = getUniformLocation gl program "iResolution"
+    let createOpenGLPresenter (gl : GlInterface) (PresenterID presenterID) (presenter : Presenter) : OpenGLPresenter =
+      let struct (vertexShader, fragmentShader, program, mixLocation, resolutionUniformLocation, timeUniformLocation) =
+        createProgram gl presenterID None presenter.Defines presenter.FragmentSource
 
       {
         Presenter           = presenter
@@ -530,18 +514,19 @@ module OpenGL =
         FragmentShader      = fragmentShader
         Program             = program
 
-        TimeLocation        = timeUniformLocation
+        MixLocation         = mixLocation
         ResolutionLocation  = resolutionUniformLocation
+        TimeLocation        = timeUniformLocation
       }
 
-    let createOpenGLScene (gl : GlInterface) (scene : Scene) : OpenGLScene =
+    let createOpenGLScene (gl : GlInterface) (sceneID : SceneID) (scene : Scene) : OpenGLScene =
       {
         Scene      = scene
-        BufferA    = createOpenGLSceneBuffer'  gl scene scene.BufferA
-        BufferB    = createOpenGLSceneBuffer'  gl scene scene.BufferB
-        BufferC    = createOpenGLSceneBuffer'  gl scene scene.BufferC
-        BufferD    = createOpenGLSceneBuffer'  gl scene scene.BufferD
-        Image      = createOpenGLSceneBuffer   gl scene scene.Image
+        BufferA    = createOpenGLSceneBuffer'  gl sceneID scene scene.BufferA
+        BufferB    = createOpenGLSceneBuffer'  gl sceneID scene scene.BufferB
+        BufferC    = createOpenGLSceneBuffer'  gl sceneID scene scene.BufferC
+        BufferD    = createOpenGLSceneBuffer'  gl sceneID scene scene.BufferD
+        Image      = createOpenGLSceneBuffer   gl sceneID scene scene.Image
       }
 
     let createOpenGLBitmapImage (gl : GlInterface) (bitmapImage : BitmapImage) : OpenGLBitmapImage =
@@ -806,11 +791,11 @@ module OpenGL =
 
     let namedPresenters = 
       mixer.NamedPresenters
-      |> Map.map (fun k v -> createOpenGLPresenter gl v)
+      |> Map.map (fun k v -> createOpenGLPresenter gl k v)
 
     let namedScenes = 
       mixer.NamedScenes
-      |> Map.map (fun k v -> createOpenGLScene gl v)
+      |> Map.map (fun k v -> createOpenGLScene gl k v)
 
     {
       Mixer             = mixer
@@ -951,6 +936,26 @@ module OpenGL =
     renderOpenGLPresenter mixer time frameNo presenter
 
   let noBitmapImages  : Map<BitmapImageID , BitmapImage > = Map.empty
+
+  let redSceneID = SceneID "red"
+  let redScene : Scene =
+    {
+      Common          = None
+      Defines         = [||]
+      BufferA         = None
+      BufferB         = None
+      BufferC         = None
+      BufferD         = None
+      Image           =
+        {
+          FragmentSource  = ShaderSources.fragmentShaderRed
+          Channel0        = None
+          Channel1        = None
+          Channel2        = None
+          Channel3        = None
+        }
+    }
+
 
   let simplePresenterID = PresenterID "simple"
   let simplePresenter : Presenter =

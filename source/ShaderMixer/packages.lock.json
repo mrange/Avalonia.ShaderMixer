@@ -26,18 +26,6 @@
           "Avalonia.X11": "11.1.0-rc2"
         }
       },
-      "Avalonia.Diagnostics": {
-        "type": "Direct",
-        "requested": "[11.1.0-rc2, )",
-        "resolved": "11.1.0-rc2",
-        "contentHash": "OlY6hbaaJqPPVVHCxbtJC+n8UlhbPyFmLGZcvy0hkfPunBAID8jGb+lTQWTizoZ4EyHb6RaZLQw4PqUaEoztoQ==",
-        "dependencies": {
-          "Avalonia": "11.1.0-rc2",
-          "Avalonia.Controls.ColorPicker": "11.1.0-rc2",
-          "Avalonia.Controls.DataGrid": "11.1.0-rc2",
-          "Avalonia.Themes.Simple": "11.1.0-rc2"
-        }
-      },
       "Avalonia.Fonts.Inter": {
         "type": "Direct",
         "requested": "[11.1.0-rc2, )",
@@ -71,24 +59,6 @@
         "type": "Transitive",
         "resolved": "0.0.29",
         "contentHash": "U4eJLQdoDNHXtEba7MZUCwrBErBTxFp6sUewXBOdAhU0Kwzwaa/EKFcYm8kpcysjzKtfB4S0S9n0uxKZFz/ikw=="
-      },
-      "Avalonia.Controls.ColorPicker": {
-        "type": "Transitive",
-        "resolved": "11.1.0-rc2",
-        "contentHash": "ps8LrXrYt7islVb7EYolDb9mvFiPeWjjU+OkEPwtvAArfiJRhaPPaNVIC8O/x5dHVIhlZZr6OmlQc0AsufOovg==",
-        "dependencies": {
-          "Avalonia": "11.1.0-rc2",
-          "Avalonia.Remote.Protocol": "11.1.0-rc2"
-        }
-      },
-      "Avalonia.Controls.DataGrid": {
-        "type": "Transitive",
-        "resolved": "11.1.0-rc2",
-        "contentHash": "aimC/Tz0A6zXCsFhXFvZ0YZr6mBRMFyPdPvFYDVHwtUQ81xCvg8BOZ/DDvDoyhjhcZ2/JoLCqy/DgfUAg9noqg==",
-        "dependencies": {
-          "Avalonia": "11.1.0-rc2",
-          "Avalonia.Remote.Protocol": "11.1.0-rc2"
-        }
       },
       "Avalonia.FreeDesktop": {
         "type": "Transitive",
@@ -124,14 +94,6 @@
           "SkiaSharp": "2.88.8",
           "SkiaSharp.NativeAssets.Linux": "2.88.8",
           "SkiaSharp.NativeAssets.WebAssembly": "2.88.8"
-        }
-      },
-      "Avalonia.Themes.Simple": {
-        "type": "Transitive",
-        "resolved": "11.1.0-rc2",
-        "contentHash": "PWg5HNT6V42VUIFI+1JTVazBo55pMkkR9NM7NWPWlGPrUk3kw9AqUWUKpO+Z2nAWyJRcfwOj7zPn/aYs2v2mvA==",
-        "dependencies": {
-          "Avalonia": "11.1.0-rc2"
         }
       },
       "Avalonia.Win32": {
@@ -191,6 +153,48 @@
         "resolved": "0.11.0",
         "contentHash": "MEnrZ3UIiH40hjzMDsxrTyi8dtqB5ziv3iBeeU4bXsL/7NLSal9F1lZKpK+tfBRnUoDSdtcW3KufE4yhATOMCA=="
       },
+      "Microsoft.CSharp": {
+        "type": "Transitive",
+        "resolved": "4.7.0",
+        "contentHash": "pTj+D3uJWyN3My70i2Hqo+OXixq3Os2D1nJ2x92FFo6sk8fYS1m1WLNTs0Dc1uPaViH0YvEEwvzddQ7y4rhXmA=="
+      },
+      "Microsoft.DotNet.PlatformAbstractions": {
+        "type": "Transitive",
+        "resolved": "3.1.6",
+        "contentHash": "jek4XYaQ/PGUwDKKhwR8K47Uh1189PFzMeLqO83mXrXQVIpARZCcfuDedH50YDTepBkfijCZN5U/vZi++erxtg=="
+      },
+      "Microsoft.Extensions.DependencyModel": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "NSmDw3K0ozNDgShSIpsZcbFIzBX4w28nDag+TfaQujkXGazBm+lid5onlWoCBy4VsLxqnnKjEBbGSJVWJMf43g==",
+        "dependencies": {
+          "System.Text.Encodings.Web": "8.0.0",
+          "System.Text.Json": "8.0.0"
+        }
+      },
+      "Silk.NET.Core": {
+        "type": "Transitive",
+        "resolved": "2.21.0",
+        "contentHash": "U8gATeEGvSIc1ogSdG/LKr6SLgOjkis7Oo/QzCq+aOoGjw4tHYRVpm02V+pHp/qlQhziBbdQ/Vl5d58cmFY+PA==",
+        "dependencies": {
+          "Microsoft.CSharp": "4.7.0",
+          "Microsoft.DotNet.PlatformAbstractions": "3.1.6",
+          "Microsoft.Extensions.DependencyModel": "8.0.0",
+          "System.Memory": "4.5.5",
+          "System.Numerics.Vectors": "4.5.0",
+          "System.Runtime.CompilerServices.Unsafe": "6.0.0"
+        }
+      },
+      "Silk.NET.OpenAL": {
+        "type": "Transitive",
+        "resolved": "2.21.0",
+        "contentHash": "zF18SdntuL/7rKiNO/2HaiiCS+x2hYVmfxIs2jN12Bm1XZvEGs6u6p+m+P8SwjxlBgX15NSaX5hMCo/59eZH8Q==",
+        "dependencies": {
+          "Silk.NET.Core": "2.21.0",
+          "System.Buffers": "4.5.1",
+          "System.Numerics.Vectors": "4.5.0"
+        }
+      },
       "SkiaSharp": {
         "type": "Transitive",
         "resolved": "2.88.8",
@@ -223,15 +227,43 @@
         "resolved": "2.88.8",
         "contentHash": "O9QXoWEXA+6cweR4h3BOnwMz+pO9vL9mXdjLrpDd0w1QzCgWmLQBxa1VgySDITiH7nQndrDG1h6937zm9pLj1Q=="
       },
+      "System.Buffers": {
+        "type": "Transitive",
+        "resolved": "4.5.1",
+        "contentHash": "Rw7ijyl1qqRS0YQD/WycNst8hUUMgrMH4FCn1nNm27M4VxchZ1js3fVjQaANHO5f3sN4isvP4a+Met9Y4YomAg=="
+      },
       "System.IO.Pipelines": {
         "type": "Transitive",
         "resolved": "6.0.0",
         "contentHash": "mXX66shZ4xLlI3vNLaJ0lt8OIZdmXTvIqXRdQX5HLVGSkLhINLsVhyZuX2UdRFnOGkqnwmMUs40pIIQ7mna4+A=="
       },
+      "System.Memory": {
+        "type": "Transitive",
+        "resolved": "4.5.5",
+        "contentHash": "XIWiDvKPXaTveaB7HVganDlOCRoj03l+jrwNvcge/t8vhGYKvqV+dMv6G4SAX2NoNmN0wZfVPTAlFwZcZvVOUw=="
+      },
       "System.Numerics.Vectors": {
         "type": "Transitive",
         "resolved": "4.5.0",
         "contentHash": "QQTlPTl06J/iiDbJCiepZ4H//BVraReU4O4EoRw1U02H5TLUIT7xn3GnDp9AXPSlJUDyFs4uWjWafNX6WrAojQ=="
+      },
+      "System.Runtime.CompilerServices.Unsafe": {
+        "type": "Transitive",
+        "resolved": "6.0.0",
+        "contentHash": "/iUeP3tq1S0XdNNoMz5C9twLSrM/TH+qElHkXWaPvuNOt+99G75NrV0OS2EqHx5wMN7popYjpc8oTjC1y16DLg=="
+      },
+      "System.Text.Encodings.Web": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "yev/k9GHAEGx2Rg3/tU6MQh4HGBXJs70y7j1LaM1i/ER9po+6nnQ6RRqTJn1E7Xu0fbIFK80Nh5EoODxrbxwBQ=="
+      },
+      "System.Text.Json": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "OdrZO2WjkiEG6ajEFRABTRCi/wuXQPxeV6g8xvUJqdxMvvuCCEk86zPla8UiIQJz3durtUEbNyY/3lIhS0yZvQ==",
+        "dependencies": {
+          "System.Text.Encodings.Web": "8.0.0"
+        }
       },
       "Tmds.DBus.Protocol": {
         "type": "Transitive",
@@ -241,13 +273,14 @@
           "System.IO.Pipelines": "6.0.0"
         }
       },
-      "lib.shadermix": {
+      "lib.shadermixer": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[11.1.0-rc2, )",
           "Avalonia.Skia": "[11.1.0-rc2, )",
           "FSharp.Core": "[8.0.300, )",
-          "Lib.ShaderMixer.OpenGLExt": "[1.0.0, )"
+          "Lib.ShaderMixer.OpenGLExt": "[1.0.0, )",
+          "Silk.NET.OpenAL": "[2.21.0, )"
         }
       },
       "lib.shadermixer.openglext": {

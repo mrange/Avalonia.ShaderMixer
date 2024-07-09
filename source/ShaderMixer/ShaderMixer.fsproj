@@ -30,6 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Lib.ShaderMix\Lib.ShaderMix.fsproj" />
+    <ProjectReference Include="..\Lib.ShaderMixer\Lib.ShaderMixer.fsproj" />
   </ItemGroup>
 </Project>
