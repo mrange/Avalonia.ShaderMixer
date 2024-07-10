@@ -11,8 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="AudioMixer.fs" />
     <Compile Include="ShaderSources.fs" />
     <Compile Include="ShaderMixer.fs" />
+    <Compile Include="Scripting.fs" />
     <Compile Include="ShaderMixerControl.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -136,7 +136,6 @@ type Mixer =
     Script            : (int*ScriptPart) array
   }
 
-
 [<Struct>]
 type OpenGLBuffer         =
   {
@@ -1111,14 +1110,13 @@ module Mixer =
             | SetStage0     sid   -> stage0     <- mapGet "stage0" namedScenes sid
             | SetStage1     sid   -> stage1     <- mapGet "stage1" namedScenes sid
             | ApplyFader    faderf-> fader      <- faderf beatTime (float32 beat)
-        expandedScript.[beat] <- 
+        expandedScript.[beat] <-
           {
             Presenter = presenter
             Stage0    = stage0
             Stage1    = stage1
             Fader     = fader
           }
-
 
       expandedScript
 
@@ -1129,7 +1127,7 @@ module Mixer =
     (glContext  : IGlContext  )
     (gl         : GlInterface )
     (resolution : Vector2     )
-    (mixer      : Mixer       ) 
+    (mixer      : Mixer       )
     : OpenGLMixer =
 #if DEBUG
     trace "setupOpenGLMixer called"
@@ -1224,7 +1222,7 @@ module Mixer =
     }
 
   let tearDownOpenGLMixer
-    (mixer  : OpenGLMixer ) 
+    (mixer  : OpenGLMixer )
     : unit =
 
 #if DEBUG
@@ -1233,7 +1231,7 @@ module Mixer =
 
     let gl    = mixer.Gl
     let glext = mixer.GlExt
-    checkGL gl
+    assertGL gl
 
 #if DEBUG
 #if CAPTURE_OPENGL_LOGS
@@ -1268,7 +1266,7 @@ module Mixer =
     gl.DeleteFramebuffer  mixer.FrameBuffer.FrameBufferID
     assertGL gl
 
-    checkGL gl
+    assertGL gl
 
   let resizeOpenGLMixer
     (resolution : Vector2     )
@@ -1300,7 +1298,7 @@ module Mixer =
     (mix          : float32     )
     (time         : float32     )
     (frameNo      : int         )
-    (mixer        : OpenGLMixer ) 
+    (mixer        : OpenGLMixer )
     : unit =
 
     let gl    = mixer.Gl
@@ -1360,69 +1358,3 @@ module Mixer =
 
     renderOpenGLMixerPresenter mixer mix time frameNo stage0 stage1 presenter
 
-module Scripting =
-  open OpenGLMath
-
-  let noBitmapImages  : Map<BitmapImageID , MixerBitmapImage > = Map.empty
-
-  let basicScene fragmentShaderSource : MixerScene =
-    {
-      Common          = None
-      Defines         = [||]
-      BufferA         = None
-      BufferB         = None
-      BufferC         = None
-      BufferD         = None
-      Image           =
-        {
-          FragmentSource  = fragmentShaderSource
-          Channel0        = None
-          Channel1        = None
-          Channel2        = None
-          Channel3        = None
-        }
-    }
-
-  let basicPresenter fragmentShaderSource : MixerPresenter =
-    {
-      FragmentSource  = fragmentShaderSource
-      Defines         = [||]
-      Channel0        =
-        {
-          Filter  = Linear
-          Wrap    = Clamp
-        }
-      Channel1        =
-        {
-          Filter  = Linear
-          Wrap    = Clamp
-        }
-    }
-
-  let blackSceneID      = SceneID "black"
-  let blackScene        = basicScene ShaderSources.fragmentShaderBlack
-
-  let redSceneID        = SceneID "red"
-  let redScene          = basicScene ShaderSources.fragmentShaderRed
-
-  let faderPresenterID  = PresenterID "fader"
-  let faderPresenter    = basicPresenter ShaderSources.fragmentShaderFaderPresenter
-
-  let defaultPresenters : Map<PresenterID, MixerPresenter> =
-    [|
-      faderPresenterID, faderPresenter
-    |] |> Map.ofArray
-
-  let fadeFromTo f t beats : FaderFactory =
-    fun beatTime beat -> 
-      let s = beatTime beat
-      let e = beatTime (beat + beats)
-      fun time -> 
-        mix f t (smoothstep s e time)
-    
-  let fadeToStage0 beats : FaderFactory =
-    fadeFromTo 1.F 0.F beats
-    
-  let fadeToStage1 beats : FaderFactory =
-    fadeFromTo 0.F 1.F beats
-    
