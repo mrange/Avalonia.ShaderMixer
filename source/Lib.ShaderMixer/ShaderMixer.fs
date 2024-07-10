@@ -128,6 +128,14 @@ type Mixer =
     Script            : (int*ScriptPart) array
   }
 
+type InitialMixerState =
+  {
+    Mix       : float32
+    Presenter : PresenterID
+    Stage0    : SceneID
+    Stage1    : SceneID
+  }
+
 [<Struct>]
 type OpenGLBuffer         =
   {
@@ -256,6 +264,14 @@ type OpenGLMixerStage =
     Image             : OpenGLStageTexture
   }
 
+type ExpandedScriptPart =
+  | ExpandedNOP
+  | ExpandedSelectPresenter  of PresenterID*OpenGLMixerPresenter
+  | ExpandedSelectStage0     of SceneID*OpenGLMixerScene
+  | ExpandedSelectStage1     of SceneID*OpenGLMixerScene
+  | ExpandedFadeToStage0     of int
+  | ExpandedFadeToStage1     of int
+
 type OpenGLMixer =
   {
     Mixer             : Mixer
@@ -264,6 +280,8 @@ type OpenGLMixer =
     NamedBitmapImages : Map<BitmapImageID , OpenGLMixerBitmapImage >
     NamedPresenters   : Map<PresenterID   , OpenGLMixerPresenter   >
     NamedScenes       : Map<SceneID       , OpenGLMixerScene       >
+
+    ExpandedScript    : ExpandedScriptPart array array
 
     Stage0            : OpenGLMixerStage
     Stage1            : OpenGLMixerStage
@@ -281,6 +299,15 @@ type OpenGLMixer =
   member x.ContextIsSame (o : IGlContext) =
     obj.ReferenceEquals (x.GlContext, o)
 
+[<Struct>]
+type OpenGLMixerState =
+  {
+    Mixer     : OpenGLMixer
+    Mix       : float32
+    Presenter : MixerPresenter
+    Stage0    : OpenGLMixerScene
+    Stage1    : OpenGLMixerScene
+  }
 
 module Mixer =
   module internal Internals =
@@ -1017,6 +1044,19 @@ module Mixer =
 
       renderProgram mixer mix time mixerPresenter.MixLocation mixerPresenter.ResolutionLocation mixerPresenter.TimeLocation
 
+    let expandScriptPart 
+      (namedPresenters    : Map<PresenterID , OpenGLMixerPresenter>)
+      (namedScenes        : Map<SceneID     , OpenGLMixerScene    >)
+      ((beat, scriptPart) : int*ScriptPart                         ) : ExpandedScriptPart =
+
+      match scriptPart with
+      | SelectPresenter pid   -> ExpandedSelectPresenter  (pid, namedPresenters.[pid] )
+      | SelectStage0    sid   -> ExpandedSelectStage0     (sid, namedScenes.[sid]     )
+      | SelectStage1    sid   -> ExpandedSelectStage1     (sid, namedScenes.[sid]     )
+      | FadeToStage0    beats -> ExpandedFadeToStage0     beats
+      | FadeToStage1    beats -> ExpandedFadeToStage1     beats
+
+
   open Internals
 
   let setupOpenGLMixer
@@ -1094,12 +1134,28 @@ module Mixer =
       mixer.NamedScenes
       |> Map.map (fun k v -> createOpenGLMixerScene gl glext k v)
 
+    let expandedScript = Array.create mixer.LengthInBeats Array.empty
+
+    let groupedScriptParts = 
+      mixer.Script 
+      |> Array.groupBy fst
+
+    for (beat, scriptParts) in groupedScriptParts do
+      if beat < 0 then failwithf "Found script part(s) with negative beat index: %d < 0" beat
+      if beat >= expandedScript.Length then failwithf "Found script part(s) with too large beat index: %d >= %d" beat expandedScript.Length
+
+      let expandedScriptParts = 
+        scriptParts 
+        |> Array.map (fun v -> expandScriptPart namedPresenters namedScenes v)
+
+      expandedScript.[beat] <- expandedScriptParts
     {
       Mixer             = mixer
       Resolution        = resolution
       NamedBitmapImages = namedBitmapImages
       NamedPresenters   = namedPresenters
       NamedScenes       = namedScenes
+      ExpandedScript    = expandedScript
       Stage0            = createOpenGLMixerStage gl glext resolution
       Stage1            = createOpenGLMixerStage gl glext resolution
       FrameBuffer       = frameBuffer
