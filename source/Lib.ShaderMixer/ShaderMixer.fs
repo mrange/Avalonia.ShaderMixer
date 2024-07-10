@@ -115,10 +115,10 @@ type Fader        = float32 -> float32
 type FaderFactory = BeatTime -> float32 -> Fader
 
 type ScriptPart =
-  | SelectPresenter  of PresenterID
-  | SelectStage0     of SceneID
-  | SelectStage1     of SceneID
-  | SelectFader      of FaderFactory
+  | SetPresenter  of PresenterID
+  | SetStage0     of SceneID
+  | SetStage1     of SceneID
+  | ApplyFader    of FaderFactory
 
 type Mixer =
   {
@@ -1107,10 +1107,10 @@ module Mixer =
         | true  , scriptParts ->
           for _, scriptPart in scriptParts do
             match scriptPart with
-            | SelectPresenter  pid    -> presenter  <- mapGet "the presenter" namedPresenters pid
-            | SelectStage0     sid    -> stage0     <- mapGet "stage0" namedScenes sid
-            | SelectStage1     sid    -> stage1     <- mapGet "stage1" namedScenes sid
-            | SelectFader      faderf -> fader      <- faderf beatTime (float32 beat)
+            | SetPresenter  pid   -> presenter  <- mapGet "the presenter" namedPresenters pid
+            | SetStage0     sid   -> stage0     <- mapGet "stage0" namedScenes sid
+            | SetStage1     sid   -> stage1     <- mapGet "stage1" namedScenes sid
+            | ApplyFader    faderf-> fader      <- faderf beatTime (float32 beat)
         expandedScript.[beat] <- 
           {
             Presenter = presenter
@@ -1129,7 +1129,8 @@ module Mixer =
     (glContext  : IGlContext  )
     (gl         : GlInterface )
     (resolution : Vector2     )
-    (mixer      : Mixer       ) : OpenGLMixer =
+    (mixer      : Mixer       ) 
+    : OpenGLMixer =
 #if DEBUG
     trace "setupOpenGLMixer called"
 #endif
@@ -1137,6 +1138,8 @@ module Mixer =
     checkGL gl
 
     let glext = GlInterfaceExt gl
+
+    if mixer.LengthInBeats < 1 then failwithf "LengthInBeats expected to be at least 1"
 
 #if DEBUG
 #if CAPTURE_OPENGL_LOGS
@@ -1221,7 +1224,8 @@ module Mixer =
     }
 
   let tearDownOpenGLMixer
-    (mixer  : OpenGLMixer ) : unit =
+    (mixer  : OpenGLMixer ) 
+    : unit =
 
 #if DEBUG
     trace "tearDownOpenGLMixer called"
@@ -1296,10 +1300,8 @@ module Mixer =
     (mix          : float32     )
     (time         : float32     )
     (frameNo      : int         )
-    (mixer        : OpenGLMixer )
-    (presenterID  : PresenterID )
-    (scene0ID     : SceneID     )
-    (scene1ID     : SceneID     ) : unit =
+    (mixer        : OpenGLMixer ) 
+    : unit =
 
     let gl    = mixer.Gl
     let glext = mixer.GlExt
@@ -1313,11 +1315,16 @@ module Mixer =
 #endif
 #endif
 
-    let mix       = clamp mix 0.F 1.F
+    // This should have been check in the setup
+    assert (mixer.ExpandedScript.Length > 0)
 
-    let presenter = mixer.NamedPresenters.[presenterID]
-    let scene0    = mixer.NamedScenes.[scene0ID]
-    let scene1    = mixer.NamedScenes.[scene1ID]
+    let beat      = clamp (int ((mixer.Mixer.BPM*time)/60.F)) 0 (mixer.ExpandedScript.Length - 1)
+    let scriptPart= mixer.ExpandedScript.[beat]
+
+    let presenter = scriptPart.Presenter
+    let scene0    = scriptPart.Stage0
+    let scene1    = scriptPart.Stage1
+    let mix       = scriptPart.Fader time
 
     let stage0    = mixer.Stage0
     let stage1    = mixer.Stage1
@@ -1429,5 +1436,5 @@ module Scripting =
     fadeFromTo 1.F 0.F beats
     
   let fadeToStage1 beats : FaderFactory =
-    fadeFromTo 1.F 0.F beats
+    fadeFromTo 0.F 1.F beats
     

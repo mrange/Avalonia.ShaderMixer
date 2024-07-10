@@ -16,12 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses
 *)
 
-module Scenes
+module Setup
 open Lib.ShaderMixer
 
-let faderID         = Mixer.faderPresenterID
-let blackID         = Mixer.redSceneID
-let redID           = Mixer.redSceneID
+open Scripting
+
 let gravitySucksID  = SceneID "gravitySucks"
 
 let gravitySucks    =
@@ -45,20 +44,22 @@ let gravitySucks    =
 let mixer : Mixer =
   {
     NamedBitmapImages = Map.empty
-    NamedPresenters = Mixer.defaultPresenters
-    NamedScenes =
+    NamedPresenters   = defaultPresenters
+    NamedScenes       =
       [|
-        Mixer.blackSceneID , Mixer.blackScene
-        Mixer.redSceneID   , Mixer.redScene
-        gravitySucksID     , gravitySucks
+        blackSceneID    , blackScene
+        redSceneID      , redScene
+        gravitySucksID  , gravitySucks
       |] |> Map.ofArray
-    BPM           = 60
+    BPM           = 60.F
     LengthInBeats = 60
+
+    InitialPresenter  = faderPresenterID
+    InitialStage0     = blackSceneID
+    InitialStage1     = gravitySucksID
+
     Script        =
       [|
-        0   , SelectPresenter faderID
-        0   , SelectStage0    blackID
-        0   , SelectStage1    gravitySucksID
-        0   , FadeToStage1    4
+        0   , ApplyFader  <| fadeToStage1 4.F
       |]
   }

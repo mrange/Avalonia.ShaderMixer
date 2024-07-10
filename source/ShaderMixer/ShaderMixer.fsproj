@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <Compile Include="ShaderSources.fs" />
-    <Compile Include="Scenes.fs" />
+    <Compile Include="Setup.fs" />
     <Compile Include="MainWindow.axaml.fs" />
     <Compile Include="App.axaml.fs" />
     <Compile Include="Program.fs" />

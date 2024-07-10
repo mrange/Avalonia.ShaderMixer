@@ -31,18 +31,13 @@ open Avalonia.Skia
 
 module internal Internals =
   type ShaderMixMessage =
-  | ChangePresenterMessage      of PresenterID
   | ChangeRenderScalingMessage  of float
-  | ChangeSceneMessage          of SceneID*SceneID
   | DisposeMessage
 
-  type ShaderMixerVisual(start : Stopwatch, mixer: Mixer, initialRenderScaling : float, initialPresenter : PresenterID, initialScene0 : SceneID, initialScene1 : SceneID) =
+  type ShaderMixerVisual(start : Stopwatch, mixer: Mixer, initialRenderScaling : float) =
     class
       inherit CompositionCustomVisualHandler()
 
-      let mutable presenterID                           = initialPresenter
-      let mutable scene0ID                              = initialScene0
-      let mutable scene1ID                              = initialScene1
       let mutable frameNo                               = 0
       let mutable renderScaling                         = initialRenderScaling
       let mutable OpenGLMixer  : OpenGLMixer voption  = ValueNone
@@ -65,11 +60,7 @@ module internal Internals =
         match message with
         | :? ShaderMixMessage as sm ->
           match sm with
-          | ChangePresenterMessage      pid         -> presenterID    <- pid
           | ChangeRenderScalingMessage  rs          -> renderScaling  <- rs
-          | ChangeSceneMessage          (sid0,sid1) ->
-            scene0ID <- sid0
-            scene1ID <- sid1
           | DisposeMessage                          -> dispose ()
         | _                                         -> ()
 
@@ -124,9 +115,6 @@ module internal Internals =
                     time
                     frameNo
                     oglm
-                    presenterID
-                    scene0ID
-                    scene1ID
 
                   frameNo <- frameNo + 1
                 | _                           ->
@@ -135,14 +123,11 @@ module internal Internals =
     end
 open Internals
 
-type ShaderMixerControl(mixer: Mixer, initialPresenter : PresenterID, initialScene0 : SceneID, initialScene1 : SceneID) =
+type ShaderMixerControl(mixer: Mixer) =
   class
     inherit Control()
 
     let start                                                       = Stopwatch.StartNew ()
-    let mutable presenterID                                         = initialPresenter
-    let mutable scene0ID                                            = initialScene0
-    let mutable scene1ID                                            = initialScene1
     let mutable shaderMixerVisual : CompositionCustomVisual voption = ValueNone
     let mutable renderScaling                                       = 1.
 
@@ -161,7 +146,7 @@ type ShaderMixerControl(mixer: Mixer, initialPresenter : PresenterID, initialSce
       if not (isNull visual) then
         assert shaderMixerVisual.IsNone
         let composedVisual =
-          new ShaderMixerVisual (start, mixer, renderScaling, presenterID, scene0ID, scene1ID)
+          new ShaderMixerVisual (start, mixer, renderScaling)
           |> visual.Compositor.CreateCustomVisual
         ElementComposition.SetElementChildVisual (x, composedVisual)
         composedVisual.Size <- Vector2 (float32 x.Bounds.Width, float32 x.Bounds.Height)
