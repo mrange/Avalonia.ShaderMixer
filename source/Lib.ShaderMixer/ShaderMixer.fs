@@ -110,12 +110,15 @@ type MixerScene =
     Image         : SceneBuffer
   }
 
+type BeatTime     = float32 -> float32
+type Fader        = float32 -> float32
+type FaderFactory = BeatTime -> float32 -> Fader
+
 type ScriptPart =
   | SelectPresenter  of PresenterID
   | SelectStage0     of SceneID
   | SelectStage1     of SceneID
-  | FadeToStage0     of int
-  | FadeToStage1     of int
+  | SelectFader      of FaderFactory
 
 type Mixer =
   {
@@ -123,18 +126,16 @@ type Mixer =
     NamedPresenters   : Map<PresenterID   , MixerPresenter  >
     NamedScenes       : Map<SceneID       , MixerScene      >
 
-    BPM               : float
+    BPM               : float32
     LengthInBeats     : int
+
+    InitialPresenter  : PresenterID
+    InitialStage0     : SceneID
+    InitialStage1     : SceneID
+
     Script            : (int*ScriptPart) array
   }
 
-type InitialMixerState =
-  {
-    Mix       : float32
-    Presenter : PresenterID
-    Stage0    : SceneID
-    Stage1    : SceneID
-  }
 
 [<Struct>]
 type OpenGLBuffer         =
@@ -265,12 +266,12 @@ type OpenGLMixerStage =
   }
 
 type ExpandedScriptPart =
-  | ExpandedNOP
-  | ExpandedSelectPresenter  of PresenterID*OpenGLMixerPresenter
-  | ExpandedSelectStage0     of SceneID*OpenGLMixerScene
-  | ExpandedSelectStage1     of SceneID*OpenGLMixerScene
-  | ExpandedFadeToStage0     of int
-  | ExpandedFadeToStage1     of int
+  {
+    Presenter : OpenGLMixerPresenter
+    Stage0    : OpenGLMixerScene
+    Stage1    : OpenGLMixerScene
+    Fader     : Fader
+  }
 
 type OpenGLMixer =
   {
@@ -281,7 +282,7 @@ type OpenGLMixer =
     NamedPresenters   : Map<PresenterID   , OpenGLMixerPresenter   >
     NamedScenes       : Map<SceneID       , OpenGLMixerScene       >
 
-    ExpandedScript    : ExpandedScriptPart array array
+    ExpandedScript    : ExpandedScriptPart array
 
     Stage0            : OpenGLMixerStage
     Stage1            : OpenGLMixerStage
@@ -299,31 +300,26 @@ type OpenGLMixer =
   member x.ContextIsSame (o : IGlContext) =
     obj.ReferenceEquals (x.GlContext, o)
 
-[<Struct>]
-type OpenGLMixerState =
-  {
-    Mixer     : OpenGLMixer
-    Mix       : float32
-    Presenter : MixerPresenter
-    Stage0    : OpenGLMixerScene
-    Stage1    : OpenGLMixerScene
-  }
+module OpenGLMath =
+  let inline min (a : ^T) (b : ^T) : ^T =
+    if a < b then a else b
+
+  let inline max (a : ^T) (b : ^T) : ^T =
+    if a > b then a else b
+
+  let inline clamp (a : ^T) (b : ^T) (c : ^T) : ^T =
+    if a < b then b elif a > c then c else a
+
+  let mix (x : float32) (y : float32) (a : float32) = x*(1.F-a)+y*a
+
+  let smoothstep (edge0 : float32) (edge1 : float32) (x : float32) : float32 =
+    let t = clamp ((x - edge0) / (edge1 - edge0)) 0.F 1.F
+    t * t * (3.F - 2.F * t)
 
 module Mixer =
+  open OpenGLMath
+
   module internal Internals =
-    let inline min (a : ^T) (b : ^T) : ^T =
-      if a < b then a else b
-
-    let inline max (a : ^T) (b : ^T) : ^T =
-      if a > b then a else b
-
-    let inline clamp (a : ^T) (b : ^T) (c : ^T) : ^T =
-      if a < b then b elif a > c then c else a
-
-    let smoothstep (edge0 : float32) (edge1 : float32) (x : float32) : float32 =
-      let t = clamp ((x - edge0) / (edge1 - edge0)) 0.F 1.F
-      t * t * (3.F - 2.F * t)
-
     let positionLocation  = 0
     let texCoordLocation  = 1
 
@@ -364,8 +360,7 @@ module Mixer =
         GL_STACK_OVERFLOW                 , "Stack overflow"
       |] |> Map.ofArray
 
-    let checkGL
-      (gl : GlInterface) : unit =
+    let checkGL (gl : GlInterface) : unit =
 
       let err = gl.GetError ()
       if err <> GL_NO_ERROR then
@@ -376,8 +371,7 @@ module Mixer =
 
         failwithf "OpenGL is in an error state: %s" msg
 
-    let assertGL
-      (gl : GlInterface) : unit =
+    let assertGL (gl : GlInterface) : unit =
 
 #if DEBUG
       let err = gl.GetError ()
@@ -386,10 +380,16 @@ module Mixer =
       ()
 #endif
 
+    let mapGet nm (m : Map<'K, 'V>) k =
+      match m.TryGetValue k with
+      | false , _ -> failwithf "Unabled to locate %s using key: %A" nm k
+      | true  , v -> v
+
     let traceIntegerv
       (gl     : GlInterface   )
       (glext  : GlInterfaceExt)
-      (id     : int           ) : unit =
+      (id     : int           )
+      : unit =
 
       let v = gl.GetIntegerv id
       tracef "GetIntegerv 0x%x = 0x%x" id v
@@ -398,7 +398,8 @@ module Mixer =
       (gl     : GlInterface   )
       (glext  : GlInterfaceExt)
       (target : int         )
-      (vs     : 'T array    ) : OpenGLBuffer =
+      (vs     : 'T array    )
+      : OpenGLBuffer =
 
       let elementSize = sizeof<'T>
       let buffer =
@@ -428,7 +429,8 @@ module Mixer =
       (glext    : GlInterfaceExt)
       (parentID : string        )
       (glEnum   : int           )
-      (source   : string        ) : OpenGLShader =
+      (source   : string        )
+      : OpenGLShader =
 
       let shader =
         {
@@ -447,7 +449,8 @@ module Mixer =
       (gl       : GlInterface   )
       (glext    : GlInterfaceExt)
       (program  : OpenGLProgram )
-      (name     : string        ) : OpenGLUniformLocation voption =
+      (name     : string        )
+      : OpenGLUniformLocation voption =
 
       let loc =
         {
@@ -464,7 +467,8 @@ module Mixer =
     let createTexture
       (gl         : GlInterface   )
       (glext      : GlInterfaceExt)
-      (resolution : Vector2       ) : OpenGLTexture =
+      (resolution : Vector2       )
+      : OpenGLTexture =
 
       let texture =
         {
@@ -486,7 +490,8 @@ module Mixer =
     let createTextureFromBitmapImage
       (gl               : GlInterface     )
       (glext            : GlInterfaceExt  )
-      (mixerBitmapImage : MixerBitmapImage) : OpenGLTexture =
+      (mixerBitmapImage : MixerBitmapImage)
+      : OpenGLTexture =
 
       mixerBitmapImage.Validate ()
 
@@ -513,7 +518,8 @@ module Mixer =
     let createOpenGLStageTexture
       (gl         : GlInterface   )
       (glext      : GlInterfaceExt)
-      (resolution : Vector2       ) : OpenGLStageTexture =
+      (resolution : Vector2       )
+      : OpenGLStageTexture =
 
       {
         Texture0 = createTexture gl glext resolution
@@ -525,7 +531,8 @@ module Mixer =
       (glext          : GlInterfaceExt)
       (program        : OpenGLProgram )
       (name           : string        )
-      (bufferChannel  : BufferChannel ) : OpenGLBufferChannel =
+      (bufferChannel  : BufferChannel )
+      : OpenGLBufferChannel =
 
       {
         BufferChannel = bufferChannel
@@ -537,7 +544,8 @@ module Mixer =
       (glext          : GlInterfaceExt      )
       (program        : OpenGLProgram       )
       (name           : string              )
-      (bufferChannel  : BufferChannel option) : OpenGLBufferChannel voption =
+      (bufferChannel  : BufferChannel option)
+      : OpenGLBufferChannel voption =
 
       match bufferChannel with
       | None    -> ValueNone
@@ -548,7 +556,8 @@ module Mixer =
       (glext            : GlInterfaceExt  )
       (program          : OpenGLProgram   )
       (name             : string          )
-      (presenterChannel : PresenterChannel) : OpenGLPresenterChannel =
+      (presenterChannel : PresenterChannel)
+      : OpenGLPresenterChannel =
 
       {
         PresenterChannel= presenterChannel
@@ -558,7 +567,8 @@ module Mixer =
     let createFragmentSource
       (common         : string option )
       (defines        : string array  )
-      (fragmentSource : string        ) : string =
+      (fragmentSource : string        )
+      : string =
 
       let prelude = "#define "
       let common  = match common with | None -> "" | Some s -> s
@@ -624,7 +634,8 @@ module Mixer =
       (glext        : GlInterfaceExt)
       (SceneID        sceneID       )
       (mixerScene   : MixerScene    )
-      (sceneBuffer  : SceneBuffer   ) : OpenGLSceneBuffer =
+      (sceneBuffer  : SceneBuffer   )
+      : OpenGLSceneBuffer =
 
       let struct (vertexShader, fragmentShader, program, mixLocation, resolutionUniformLocation, timeUniformLocation) =
         createProgram gl glext sceneID mixerScene.Common mixerScene.Defines sceneBuffer.FragmentSource
@@ -650,7 +661,8 @@ module Mixer =
       (glext        : GlInterfaceExt    )
       (sceneID      : SceneID           )
       (mixerScene   : MixerScene        )
-      (sceneBuffer  : SceneBuffer option) : OpenGLSceneBuffer voption =
+      (sceneBuffer  : SceneBuffer option)
+      : OpenGLSceneBuffer voption =
 
       match sceneBuffer with
       | None    -> ValueNone
@@ -660,7 +672,8 @@ module Mixer =
       (gl             : GlInterface   )
       (glext          : GlInterfaceExt)
       (PresenterID      presenterID   )
-      (mixerPresenter : MixerPresenter) : OpenGLMixerPresenter =
+      (mixerPresenter : MixerPresenter)
+      : OpenGLMixerPresenter =
 
       let struct (vertexShader, fragmentShader, program, mixLocation, resolutionUniformLocation, timeUniformLocation) =
         createProgram gl glext presenterID None mixerPresenter.Defines mixerPresenter.FragmentSource
@@ -683,7 +696,8 @@ module Mixer =
       (gl         : GlInterface   )
       (glext      : GlInterfaceExt)
       (sceneID    : SceneID       )
-      (mixerScene : MixerScene    ) : OpenGLMixerScene =
+      (mixerScene : MixerScene    )
+      : OpenGLMixerScene =
 
       {
         MixerScene = mixerScene
@@ -697,7 +711,8 @@ module Mixer =
     let createOpenGLMixerBitmapImage
       (gl               : GlInterface     )
       (glext            : GlInterfaceExt  )
-      (mixerBitmapImage : MixerBitmapImage) : OpenGLMixerBitmapImage =
+      (mixerBitmapImage : MixerBitmapImage)
+      : OpenGLMixerBitmapImage =
 
       {
         MixerBitmapImage  = mixerBitmapImage
@@ -707,7 +722,8 @@ module Mixer =
     let createOpenGLMixerStage
       (gl         : GlInterface   )
       (glext      : GlInterfaceExt)
-      (resolution : Vector2       ) : OpenGLMixerStage =
+      (resolution : Vector2       )
+      : OpenGLMixerStage =
 
       {
         BufferA           = createOpenGLStageTexture gl glext resolution
@@ -719,13 +735,15 @@ module Mixer =
 
     let tearDownOpenGLBufferChannel
       (mixer          : OpenGLMixer         )
-      (bufferChannel  : OpenGLBufferChannel ) : unit =
+      (bufferChannel  : OpenGLBufferChannel )
+      : unit =
 
       ()
 
     let tearDownOpenGLBufferChannel'
       (mixer          : OpenGLMixer                 )
-      (bufferChannel  : OpenGLBufferChannel voption ) : unit =
+      (bufferChannel  : OpenGLBufferChannel voption )
+      : unit =
 
       match bufferChannel with
       | ValueNone     -> ()
@@ -733,13 +751,15 @@ module Mixer =
 
     let tearDownOpenGLPresenterChannel
       (mixer              : OpenGLMixer           )
-      (presenterChannel   : OpenGLPresenterChannel) : unit =
+      (presenterChannel   : OpenGLPresenterChannel)
+      : unit =
 
       ()
 
     let tearDownOpenGLStageTexture
       (mixer        : OpenGLMixer       )
-      (stageTexture : OpenGLStageTexture) : unit =
+      (stageTexture : OpenGLStageTexture)
+      : unit =
 
       let gl    = mixer.Gl
 
@@ -751,7 +771,8 @@ module Mixer =
 
     let tearDownOpenGLMixerBitmapImage
       (mixer            : OpenGLMixer           )
-      (mixerBitmapImage : OpenGLMixerBitmapImage) : unit =
+      (mixerBitmapImage : OpenGLMixerBitmapImage)
+      : unit =
 
       let gl    = mixer.Gl
 
@@ -760,7 +781,8 @@ module Mixer =
 
     let tearDownOpenGLSceneBuffer
       (mixer        : OpenGLMixer       )
-      (sceneBuffer  : OpenGLSceneBuffer ) : unit =
+      (sceneBuffer  : OpenGLSceneBuffer )
+      : unit =
 
       let gl    = mixer.Gl
 
@@ -780,7 +802,8 @@ module Mixer =
 
     let tearDownOpenGLSceneBuffer'
       (mixer        : OpenGLMixer               )
-      (sceneBuffer  : OpenGLSceneBuffer voption ) : unit =
+      (sceneBuffer  : OpenGLSceneBuffer voption )
+      : unit =
 
       match sceneBuffer with
       | ValueNone     -> ()
@@ -788,7 +811,8 @@ module Mixer =
 
     let tearDownOpenGLMixerScene
       (mixer      : OpenGLMixer     )
-      (mixerScene : OpenGLMixerScene) : unit =
+      (mixerScene : OpenGLMixerScene)
+      : unit =
 
       tearDownOpenGLSceneBuffer' mixer mixerScene.BufferD
       tearDownOpenGLSceneBuffer' mixer mixerScene.BufferC
@@ -798,7 +822,8 @@ module Mixer =
 
     let tearDownOpenGLMixerPresenter
       (mixer          : OpenGLMixer         )
-      (mixerPresenter : OpenGLMixerPresenter) : unit =
+      (mixerPresenter : OpenGLMixerPresenter)
+      : unit =
 
       let gl    = mixer.Gl
 
@@ -816,7 +841,8 @@ module Mixer =
 
     let tearDownOpenGLMixerStage
       (mixer      : OpenGLMixer     )
-      (mixerStage : OpenGLMixerStage) : unit =
+      (mixerStage : OpenGLMixerStage)
+      : unit =
 
       tearDownOpenGLStageTexture mixer mixerStage.Image
       tearDownOpenGLStageTexture mixer mixerStage.BufferD
@@ -827,7 +853,8 @@ module Mixer =
     let resizeOpenGLStageTexture
       (mixer        : OpenGLMixer       )
       (resolution   : Vector2           )
-      (stageTexture : OpenGLStageTexture) : OpenGLStageTexture =
+      (stageTexture : OpenGLStageTexture)
+      : OpenGLStageTexture =
 
       let gl    = mixer.Gl
       let glext = mixer.GlExt
@@ -838,7 +865,8 @@ module Mixer =
     let resizeOpenGLMixerStage
       (mixer      : OpenGLMixer     )
       (resolution : Vector2         )
-      (mixerStage : OpenGLMixerStage) : OpenGLMixerStage =
+      (mixerStage : OpenGLMixerStage)
+      : OpenGLMixerStage =
 
       let gl = mixer.Gl
 
@@ -856,7 +884,8 @@ module Mixer =
       (sourceTexture  : OpenGLTexture         )
       (loc            : OpenGLUniformLocation )
       (filter         : ChannelFilter         )
-      (wrap           : ChannelWrap           ) : unit =
+      (wrap           : ChannelWrap           )
+      : unit =
 
       let gl    = mixer.Gl
       let glext = mixer.GlExt
@@ -898,7 +927,8 @@ module Mixer =
       (mixerStage     : OpenGLMixerStage    )
       (frameNo        : int                 )
       (textureUnitNo  : int                 )
-      (bufferChannel  : OpenGLBufferChannel ) : unit =
+      (bufferChannel  : OpenGLBufferChannel )
+      : unit =
 
       match bufferChannel.Location with
       | ValueNone     ->  ()
@@ -911,7 +941,7 @@ module Mixer =
           | BufferD       -> mixerStage.BufferD.BackgroundTexture frameNo
           | Image         -> mixerStage.Image.BackgroundTexture   frameNo
           | BitmapImage ii->
-            let image = mixer.NamedBitmapImages.[ii]
+            let image = mapGet "the bitmap image" mixer.NamedBitmapImages ii
             image.Texture
         renderOpenGLTexture mixer textureUnitNo sourceTexture loc bufferChannel.BufferChannel.Filter bufferChannel.BufferChannel.Wrap
 
@@ -920,7 +950,8 @@ module Mixer =
       (frameNo          : int                   )
       (mixerStage       : OpenGLMixerStage      )
       (textureUnitNo    : int                   )
-      (presenterChannel : OpenGLPresenterChannel) : unit =
+      (presenterChannel : OpenGLPresenterChannel)
+      : unit =
 
       match presenterChannel.Location with
       | ValueNone     ->  ()
@@ -936,7 +967,8 @@ module Mixer =
       (mixerStage     : OpenGLMixerStage            )
       (frameNo        : int                         )
       (textureUnitNo  : int                         )
-      (bufferChannel  : OpenGLBufferChannel voption ) : unit =
+      (bufferChannel  : OpenGLBufferChannel voption )
+      : unit =
 
       match bufferChannel with
       | ValueNone     -> ()
@@ -980,7 +1012,8 @@ module Mixer =
       (time           : float32           )
       (frameNo        : int               )
       (stageTexture   : OpenGLStageTexture)
-      (sceneBuffer    : OpenGLSceneBuffer ) : unit =
+      (sceneBuffer    : OpenGLSceneBuffer )
+      : unit =
 
       let gl    = mixer.Gl
 
@@ -1005,7 +1038,8 @@ module Mixer =
       (time         : float32                   )
       (frameNo      : int                       )
       (stageTexture : OpenGLStageTexture        )
-      (sceneBuffer  : OpenGLSceneBuffer voption ) : unit =
+      (sceneBuffer  : OpenGLSceneBuffer voption )
+      : unit =
 
       match sceneBuffer with
       | ValueNone     -> ()
@@ -1016,7 +1050,8 @@ module Mixer =
       (time       : float32         )
       (frameNo    : int             )
       (mixerStage : OpenGLMixerStage)
-      (scene      : OpenGLMixerScene) : unit =
+      (scene      : OpenGLMixerScene)
+      : unit =
 
       renderOpenGLSceneBuffer' mixer mixerStage time frameNo mixerStage.BufferA scene.BufferA
       renderOpenGLSceneBuffer' mixer mixerStage time frameNo mixerStage.BufferB scene.BufferB
@@ -1031,7 +1066,8 @@ module Mixer =
       (frameNo        : int                 )
       (stage0         : OpenGLMixerStage    )
       (stage1         : OpenGLMixerStage    )
-      (mixerPresenter : OpenGLMixerPresenter) : unit =
+      (mixerPresenter : OpenGLMixerPresenter)
+      : unit =
 
       let gl    = mixer.Gl
       let glext = mixer.GlExt
@@ -1044,17 +1080,48 @@ module Mixer =
 
       renderProgram mixer mix time mixerPresenter.MixLocation mixerPresenter.ResolutionLocation mixerPresenter.TimeLocation
 
-    let expandScriptPart 
+    let expandScript
+      (mixer              : Mixer                                  )
       (namedPresenters    : Map<PresenterID , OpenGLMixerPresenter>)
       (namedScenes        : Map<SceneID     , OpenGLMixerScene    >)
-      ((beat, scriptPart) : int*ScriptPart                         ) : ExpandedScriptPart =
+      : ExpandedScriptPart array =
 
-      match scriptPart with
-      | SelectPresenter pid   -> ExpandedSelectPresenter  (pid, namedPresenters.[pid] )
-      | SelectStage0    sid   -> ExpandedSelectStage0     (sid, namedScenes.[sid]     )
-      | SelectStage1    sid   -> ExpandedSelectStage1     (sid, namedScenes.[sid]     )
-      | FadeToStage0    beats -> ExpandedFadeToStage0     beats
-      | FadeToStage1    beats -> ExpandedFadeToStage1     beats
+      let groupedScriptParts =
+        mixer.Script
+        |> Array.groupBy fst
+        |> Map.ofArray
+
+
+      let beatTime beat =(mixer.BPM*beat)/60.F
+      let faderStage0 : Fader = fun time -> 0.F
+      let mutable presenter   = mapGet "the intitial presenter" namedPresenters mixer.InitialPresenter
+      let mutable stage0      = mapGet "the intitial stage 0"   namedScenes     mixer.InitialStage0
+      let mutable stage1      = mapGet "the intitial stage 1"   namedScenes     mixer.InitialStage1
+      let mutable fader       = faderStage0
+
+      let expandedScript : ExpandedScriptPart array = Array.zeroCreate mixer.LengthInBeats
+
+      for beat = 0 to mixer.LengthInBeats - 1 do
+        match groupedScriptParts.TryGetValue beat with
+        | false , _           -> ()
+        | true  , scriptParts ->
+          for _, scriptPart in scriptParts do
+            match scriptPart with
+            | SelectPresenter  pid    -> presenter  <- mapGet "the presenter" namedPresenters pid
+            | SelectStage0     sid    -> stage0     <- mapGet "stage0" namedScenes sid
+            | SelectStage1     sid    -> stage1     <- mapGet "stage1" namedScenes sid
+            | SelectFader      faderf -> fader      <- faderf beatTime (float32 beat)
+        expandedScript.[beat] <- 
+          {
+            Presenter = presenter
+            Stage0    = stage0
+            Stage1    = stage1
+            Fader     = fader
+          }
+
+
+      expandedScript
+
 
   open Internals
 
@@ -1133,21 +1200,8 @@ module Mixer =
       mixer.NamedScenes
       |> Map.map (fun k v -> createOpenGLMixerScene gl glext k v)
 
-    let expandedScript = Array.create mixer.LengthInBeats Array.empty
+    let expandedScript = expandScript mixer namedPresenters namedScenes
 
-    let groupedScriptParts = 
-      mixer.Script 
-      |> Array.groupBy fst
-
-    for (beat, scriptParts) in groupedScriptParts do
-      if beat < 0 then failwithf "Found script part(s) with negative beat index: %d < 0" beat
-      if beat >= expandedScript.Length then failwithf "Found script part(s) with too large beat index: %d >= %d" beat expandedScript.Length
-
-      let expandedScriptParts = 
-        scriptParts 
-        |> Array.map (fun v -> expandScriptPart namedPresenters namedScenes v)
-
-      expandedScript.[beat] <- expandedScriptParts
     {
       Mixer             = mixer
       Resolution        = resolution
@@ -1299,6 +1353,9 @@ module Mixer =
 
     renderOpenGLMixerPresenter mixer mix time frameNo stage0 stage1 presenter
 
+module Scripting =
+  open OpenGLMath
+
   let noBitmapImages  : Map<BitmapImageID , MixerBitmapImage > = Map.empty
 
   let blackSceneID = SceneID "black"
@@ -1339,7 +1396,6 @@ module Mixer =
         }
     }
 
-
   let faderPresenterID = PresenterID "fader"
   let faderPresenter : MixerPresenter =
     {
@@ -1361,3 +1417,17 @@ module Mixer =
     [|
       faderPresenterID, faderPresenter
     |] |> Map.ofArray
+
+  let fadeFromTo f t beats : FaderFactory =
+    fun beatTime beat -> 
+      let s = beatTime beat
+      let e = beatTime (beat + beats)
+      fun time -> 
+        mix f t (smoothstep s e time)
+    
+  let fadeToStage0 beats : FaderFactory =
+    fadeFromTo 1.F 0.F beats
+    
+  let fadeToStage1 beats : FaderFactory =
+    fadeFromTo 1.F 0.F beats
+    
