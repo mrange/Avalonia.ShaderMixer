@@ -22,6 +22,7 @@ open Avalonia
 open Avalonia.Controls
 open Avalonia.Markup.Xaml
 
+open System
 open System.Diagnostics
 
 open Lib.ShaderMixer

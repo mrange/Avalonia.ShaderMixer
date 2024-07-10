@@ -23,19 +23,21 @@ open FSharp.NativeInterop
 
 open Silk.NET.OpenAL
 
-type AudioSpecification =
-  | MonoFloat8
-  | MonoFloat16
-  | StereoFloat8
-  | StereoFloat16
+type AudioChannels =
+  | Mono
+  | Stereo
+
+type AudioBits =
+  | AudioBits8    of byte   array
+  | AudioBits16   of int16  array
 
 
 type AudioMixer =
   {
-    AudioSpecification  : AudioSpecification
+    AudioChannels       : AudioChannels
     Frequency           : int
     Looping             : bool
-    AudioBits           : byte[]
+    AudioBits           : AudioBits
   }
 
 type OpenALAudioMixer  =
@@ -84,7 +86,7 @@ module AudioMixer =
 
   open Internals
 
-  let setupAudioMixer
+  let setupOpenALAudioMixer
     (audioMixer : AudioMixer)
     : OpenALAudioMixer =
 
@@ -117,17 +119,25 @@ module AudioMixer =
     checkAL   al
     checkALC  alc device
 
-    use ptr = fixed audioMixer.AudioBits
-
     let bufferFormat =
-      match audioMixer.AudioSpecification with
-      | MonoFloat8    -> BufferFormat.Mono8
-      | MonoFloat16   -> BufferFormat.Mono16
-      | StereoFloat8  -> BufferFormat.Stereo8
-      | StereoFloat16 -> BufferFormat.Stereo16
-    al.BufferData (buffer, bufferFormat, NativePtr.toVoidPtr ptr, audioMixer.AudioBits.Length, audioMixer.Frequency)
-    checkAL   al
-    checkALC  alc device
+      match audioMixer.AudioChannels, audioMixer.AudioBits with
+      | Mono    , AudioBits8  _ -> BufferFormat.Mono8
+      | Mono    , AudioBits16 _ -> BufferFormat.Mono16
+      | Stereo  , AudioBits8  _ -> BufferFormat.Stereo8
+      | Stereo  , AudioBits16 _ -> BufferFormat.Stereo16
+
+
+    match audioMixer.AudioBits with
+    | AudioBits8  bits -> 
+      use ptr = fixed bits
+      al.BufferData (buffer, bufferFormat, NativePtr.toVoidPtr ptr, bits.Length, audioMixer.Frequency)
+      checkAL   al
+      checkALC  alc device
+    | AudioBits16 bits ->
+      use ptr = fixed bits
+      al.BufferData (buffer, bufferFormat, NativePtr.toVoidPtr ptr, 2*bits.Length, audioMixer.Frequency)
+      checkAL   al
+      checkALC  alc device
 
     al.SetSourceProperty (source, SourceInteger.Buffer, buffer)
     checkAL   al
@@ -151,17 +161,13 @@ module AudioMixer =
       Alc         = alc
     }
 
-  let tearDownAudioMixer
+  let tearDownOpenALAudioMixer
     (audioMixer : OpenALAudioMixer)
     : unit =
 
     let al  = audioMixer.Al
     let alc = audioMixer.Alc
 
-    assertAL   al
-    assertALC  alc audioMixer.Device
-
-    al.SourceStop       audioMixer.Source
     assertAL   al
     assertALC  alc audioMixer.Device
 
