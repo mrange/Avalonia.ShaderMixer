@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses
 namespace Lib.ShaderMixer
 
 open System
-open System.Diagnostics
 open System.Numerics
 
 open Avalonia
@@ -34,7 +33,7 @@ module internal Internals =
   | ChangeRenderScalingMessage  of float
   | DisposeMessage
 
-  type ShaderMixerVisual(start : Stopwatch, mixer: Mixer, initialRenderScaling : float) =
+  type ShaderMixerVisual(mixer: Mixer, initialRenderScaling : float, clock: unit -> float32) =
     class
       inherit CompositionCustomVisualHandler()
 
@@ -108,7 +107,7 @@ module internal Internals =
 
                   OpenGLMixer <- ValueSome oglm
 
-                  let time = float32 start.ElapsedMilliseconds/1000.F
+                  let time = clock ()
                   Mixer.renderOpenGLMixer
                     pixelRect
                     0.0F
@@ -123,11 +122,10 @@ module internal Internals =
     end
 open Internals
 
-type ShaderMixerControl(mixer: Mixer) =
+type ShaderMixerControl(mixer: Mixer, clock: unit -> float32) =
   class
     inherit Control()
 
-    let start                                                       = Stopwatch.StartNew ()
     let mutable shaderMixerVisual : CompositionCustomVisual voption = ValueNone
     let mutable renderScaling                                       = 1.
 
@@ -146,7 +144,7 @@ type ShaderMixerControl(mixer: Mixer) =
       if not (isNull visual) then
         assert shaderMixerVisual.IsNone
         let composedVisual =
-          new ShaderMixerVisual (start, mixer, renderScaling)
+          new ShaderMixerVisual (mixer, renderScaling, clock)
           |> visual.Compositor.CreateCustomVisual
         ElementComposition.SetElementChildVisual (x, composedVisual)
         composedVisual.Size <- Vector2 (float32 x.Bounds.Width, float32 x.Bounds.Height)

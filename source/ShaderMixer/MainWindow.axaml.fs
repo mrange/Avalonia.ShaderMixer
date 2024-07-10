@@ -22,6 +22,8 @@ open Avalonia
 open Avalonia.Controls
 open Avalonia.Markup.Xaml
 
+open System.Diagnostics
+
 open Lib.ShaderMixer
 
 type MainWindow () as this =
@@ -35,7 +37,10 @@ type MainWindow () as this =
 #endif
     AvaloniaXamlLoader.Load(this)
 
-    let shaderMixer = ShaderMixerControl Setup.mixer
+    let sw = Stopwatch.StartNew ()
+    let clock () = float32 sw.ElapsedMilliseconds/1000.F
+
+    let shaderMixer = ShaderMixerControl (Setup.mixer, clock)
     shaderMixer.RenderScaling <- this.RenderScaling
 
     match this.GetControl<ContentControl> "_content" with
