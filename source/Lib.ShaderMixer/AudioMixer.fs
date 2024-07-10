@@ -34,6 +34,7 @@ type AudioMixer =
   {
     AudioSpecification  : AudioSpecification
     Frequency           : int
+    Looping             : bool
     AudioBits           : byte[]
   }
 
@@ -132,6 +133,10 @@ module AudioMixer =
     checkAL   al
     checkALC  alc device
 
+    al.SetSourceProperty (source, SourceBoolean.Looping, audioMixer.Looping)
+    checkAL   al
+    checkALC  alc device
+
     al.SourcePlay source
     checkAL   al
     checkALC  alc device
@@ -145,7 +150,6 @@ module AudioMixer =
       Al          = al
       Alc         = alc
     }
-
 
   let tearDownAudioMixer
     (audioMixer : OpenALAudioMixer)
@@ -180,4 +184,20 @@ module AudioMixer =
 
     alc.Dispose ()
     al.Dispose ()
+
+  let getAudioPositionInSec
+    (audioMixer : OpenALAudioMixer)
+    : float32 =
+    let al  = audioMixer.Al
+    let alc = audioMixer.Alc
+
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    let mutable pos = 0.F
+    audioMixer.Al.GetSourceProperty (audioMixer.Source, SourceFloat.SecOffset, &pos)
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    pos
 
