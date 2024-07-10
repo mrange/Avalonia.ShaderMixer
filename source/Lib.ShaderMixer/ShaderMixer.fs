@@ -1056,7 +1056,6 @@ module Mixer =
       | FadeToStage0    beats -> ExpandedFadeToStage0     beats
       | FadeToStage1    beats -> ExpandedFadeToStage1     beats
 
-
   open Internals
 
   let setupOpenGLMixer
