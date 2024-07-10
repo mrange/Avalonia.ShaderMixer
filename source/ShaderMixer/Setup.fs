@@ -22,24 +22,7 @@ open Lib.ShaderMixer
 open Scripting
 
 let gravitySucksID  = SceneID "gravitySucks"
-
-let gravitySucks    =
-  {
-    Defines = [||]
-    Common  = None
-    BufferA = None
-    BufferB = None
-    BufferC = None
-    BufferD = None
-    Image   =
-      {
-        FragmentSource  = ShaderSources.gravitySucks
-        Channel0        = None
-        Channel1        = None
-        Channel2        = None
-        Channel3        = None
-      }
-  }
+let gravitySucks    = basicScene ShaderSources.gravitySucks
 
 let mixer : Mixer =
   {

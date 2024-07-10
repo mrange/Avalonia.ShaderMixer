@@ -1365,8 +1365,7 @@ module Scripting =
 
   let noBitmapImages  : Map<BitmapImageID , MixerBitmapImage > = Map.empty
 
-  let blackSceneID = SceneID "black"
-  let blackScene : MixerScene =
+  let basicScene fragmentShaderSource : MixerScene =
     {
       Common          = None
       Defines         = [||]
@@ -1376,7 +1375,7 @@ module Scripting =
       BufferD         = None
       Image           =
         {
-          FragmentSource  = ShaderSources.fragmentShaderBlack
+          FragmentSource  = fragmentShaderSource
           Channel0        = None
           Channel1        = None
           Channel2        = None
@@ -1384,29 +1383,9 @@ module Scripting =
         }
     }
 
-  let redSceneID = SceneID "red"
-  let redScene : MixerScene =
+  let basicPresenter fragmentShaderSource : MixerPresenter =
     {
-      Common          = None
-      Defines         = [||]
-      BufferA         = None
-      BufferB         = None
-      BufferC         = None
-      BufferD         = None
-      Image           =
-        {
-          FragmentSource  = ShaderSources.fragmentShaderRed
-          Channel0        = None
-          Channel1        = None
-          Channel2        = None
-          Channel3        = None
-        }
-    }
-
-  let faderPresenterID = PresenterID "fader"
-  let faderPresenter : MixerPresenter =
-    {
-      FragmentSource  = ShaderSources.fragmentShaderFaderPresenter
+      FragmentSource  = fragmentShaderSource
       Defines         = [||]
       Channel0        =
         {
@@ -1419,6 +1398,15 @@ module Scripting =
           Wrap    = Clamp
         }
     }
+
+  let blackSceneID      = SceneID "black"
+  let blackScene        = basicScene ShaderSources.fragmentShaderBlack
+
+  let redSceneID        = SceneID "red"
+  let redScene          = basicScene ShaderSources.fragmentShaderRed
+
+  let faderPresenterID  = PresenterID "fader"
+  let faderPresenter    = basicPresenter ShaderSources.fragmentShaderFaderPresenter
 
   let defaultPresenters : Map<PresenterID, MixerPresenter> =
     [|
