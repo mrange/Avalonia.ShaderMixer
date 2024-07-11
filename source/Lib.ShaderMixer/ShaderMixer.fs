@@ -307,14 +307,7 @@ type OpenGLMixer =
     obj.ReferenceEquals (x.GlContext, o)
 
 module OpenGLMath =
-  let inline min (a : ^T) (b : ^T) : ^T =
-    if a < b then a else b
-
-  let inline max (a : ^T) (b : ^T) : ^T =
-    if a > b then a else b
-
-  let inline clamp (a : ^T) (b : ^T) (c : ^T) : ^T =
-    if a < b then b elif a > c then c else a
+  let inline clamp x minVal maxVal = min (max x minVal) maxVal
 
   let mix (x : float32) (y : float32) (a : float32) = x*(1.F-a)+y*a
 

@@ -1,6 +1,6 @@
 ﻿(*
 ShaderMixer for Avalonia - Mixes ShaderToy like shaders
-Copyright (C) 2024  M�rten R�nge
+Copyright (C) 2024  Mårten Rånge
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,9 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses
 
 namespace ShaderMixer
 
+open Lib.ShaderMixer
+
 module GlobalState =
-
-  open Lib.ShaderMixer
-
   let mutable openALAudioMixer : OpenALAudioMixer option = None
 

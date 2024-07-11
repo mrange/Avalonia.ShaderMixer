@@ -28,8 +28,7 @@ type ExecuteCommand(action : obj -> unit) =
       member x.CanExecuteChanged  = canExecuteChanged.Publish
   end
 
-type PlaybackControlViewModel(mixer: Mixer)
-  =
+type PlaybackControlViewModel(mixer: Mixer, playback : Playback) =
   class
     let propertyChanged = new Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
 
@@ -37,88 +36,55 @@ type PlaybackControlViewModel(mixer: Mixer)
     let sb      = StringBuilder 32
 
     let mutable beatLabel         = "0.00"
-    let mutable currentTime       = 0.F
     let mutable currentTimeLabel  = "0.00s"
-    let mutable pitch             = 1.F
     let mutable pitchLabel        = "1.0x"
-    let mutable isPlaying         = true
-    let mutable isDragging        = false
-
-    let stopMusic p =
-      match GlobalState.openALAudioMixer with
-      | None         -> ()
-      | Some   oalm  ->
-        if not isDragging then
-          AudioMixer.pauseAudio oalm
-
-    let startMusic p =
-      match GlobalState.openALAudioMixer with
-      | None         -> ()
-      | Some   oalm  ->
-        if not isDragging then
-          AudioMixer.playAudio oalm
-
 
     member x.BeatLabel  = beatLabel
 
     member x.BPM        = mixer.BPM
 
     member x.CurrentTime
-      with get ()       = currentTime
+      with get ()       = playback.Time ()
       and set  value    =
-        if currentTime <> value then
-          currentTime       <- value
+        ignore <| playback.SetTime value
 
-          ignore <| sb.Clear ()
-          ignore <| sb.AppendFormat (culture, "{0:0.00}s", value)
-          currentTimeLabel  <- sb.ToString ()
+        ignore <| sb.Clear ()
+        ignore <| sb.AppendFormat (culture, "{0:0.00}s", value)
+        currentTimeLabel  <- sb.ToString ()
 
-          ignore <| sb.Clear ()
-          ignore <| sb.AppendFormat (culture, "{0:0.00}", mixer.TimeToBeat value)
-          beatLabel         <- sb.ToString ()
+        ignore <| sb.Clear ()
+        ignore <| sb.AppendFormat (culture, "{0:0.00}", mixer.TimeToBeat value)
+        beatLabel         <- sb.ToString ()
 
-          x.OnPropertyChanged ()
-          x.OnPropertyChanged "CurrentTimeLabel"
-          x.OnPropertyChanged "BeatLabel"
+        x.OnPropertyChanged ()
+        x.OnPropertyChanged "CurrentTimeLabel"
+        x.OnPropertyChanged "BeatLabel"
 
-          if isDragging then
-            match GlobalState.openALAudioMixer with
-            | None         -> ()
-            | Some   oalm  ->
-              AudioMixer.setAudioPositionInSec oalm value
 
     member x.CurrentTimeLabel = currentTimeLabel
 
     member x.EndTime          = mixer.BeatToTime (float32 mixer.LengthInBeats)
 
     member x.Pitch
-      with get ()       = pitch
-      and set  value    =
-        if pitch <> value then
-          pitch               <- value
+      with get ()       = playback.Pitch ()
+      and set  value    = 
+        playback.SetPitch value
 
-          ignore <| sb.Clear ()
-          ignore <| sb.AppendFormat (culture, "{0:0.0}x", value)
-          pitchLabel          <- sb.ToString ()
+        ignore <| sb.Clear ()
+        ignore <| sb.AppendFormat (culture, "{0:0.0}x", value)
+        pitchLabel          <- sb.ToString ()
 
-          x.OnPropertyChanged ()
-          x.OnPropertyChanged "PitchLabel"
-
-          match GlobalState.openALAudioMixer with
-          | None         -> ()
-          | Some   oalm  ->
-            AudioMixer.setAudioPitch oalm value
+        x.OnPropertyChanged ()
+        x.OnPropertyChanged "PitchLabel"
 
     member x.PitchLabel         = pitchLabel
 
     member x.PauseCommand       = ExecuteCommand (fun p ->
-        isPlaying <- false
-        stopMusic ()
+        playback.Pause ()
       )
 
     member x.PlayCommand       = ExecuteCommand (fun p ->
-        isPlaying <- true
-        startMusic ()
+        playback.Play ()
       )
 
     member x.ResetPitchCommand  =
@@ -127,13 +93,11 @@ type PlaybackControlViewModel(mixer: Mixer)
       )
 
     member x.DragStarted () =
-      stopMusic ()
-      isDragging <- true
+      playback.StartSeeking ()
 
 
     member x.DragCompleted () =
-      isDragging <- false
-      if isPlaying then startMusic () else stopMusic ()
+      playback.StopSeeking ()
 
     member x.OnPropertyChanged ([<CallerMemberName>] ?propertyName) =
         let propertyName = defaultArg propertyName ""
@@ -145,16 +109,13 @@ type PlaybackControlViewModel(mixer: Mixer)
   end
 
 
-type PlaybackControl (mixer: Mixer) as this = 
+type PlaybackControl (mixer: Mixer, playback : Playback) as this = 
     inherit UserControl ()
 
-    let viewModel = PlaybackControlViewModel mixer
+    let viewModel = PlaybackControlViewModel (mixer, playback)
 
     let onRefresh o e =
-      match GlobalState.openALAudioMixer with
-      | None         -> ()
-      | Some   oalm  ->
-        viewModel.CurrentTime <- AudioMixer.getAudioPositionInSec oalm
+      viewModel.CurrentTime <- playback.Time ()
 
     let refreshTimer = 
       let dt = DispatcherTimer ()

@@ -39,15 +39,9 @@ type MainWindow () as this =
 #endif
     AvaloniaXamlLoader.Load(this)
 
-    let sw = Stopwatch.StartNew ()
-    let clock () = float32 sw.ElapsedMilliseconds/1000.F
+    let playBack = Playback GlobalState.openALAudioMixer
 
-    (*
-    let clock () =
-      match GlobalState.openALAudioMixer with
-      | None      -> 0.F
-      | Some oalm -> AudioMixer.getAudioPositionInSec oalm
-    *)
+    let clock () = playBack.Time ()
 
     let shaderMixer = ShaderMixerControl (Setup.mixer, clock)
     shaderMixer.RenderScaling <- this.RenderScaling
@@ -60,7 +54,7 @@ type MainWindow () as this =
     match this.GetControl<Grid> "_grid" with
     | null  -> ()
     | grid  ->
-      let playBackControl = PlaybackControl Setup.mixer
+      let playBackControl = PlaybackControl (Setup.mixer, playBack)
       playBackControl.HorizontalAlignment <- HorizontalAlignment.Stretch
       playBackControl.VerticalAlignment   <- VerticalAlignment.Bottom
       grid.Children.Add playBackControl

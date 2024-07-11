@@ -16,33 +16,34 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses
 *)
 
-module Setup
-open Lib.ShaderMixer
+namespace ShaderMixer
+module Setup =
+  open Lib.ShaderMixer
 
-open Scripting
+  open Scripting
 
-let gravitySucksID  = SceneID "gravitySucks"
-let gravitySucks    = basicScene ShaderSources.gravitySucks
+  let gravitySucksID  = SceneID "gravitySucks"
+  let gravitySucks    = basicScene ShaderSources.gravitySucks
 
-let mixer : Mixer =
-  {
-    NamedBitmapImages = Map.empty
-    NamedPresenters   = defaultPresenters
-    NamedScenes       =
-      [|
-        blackSceneID    , blackScene
-        redSceneID      , redScene
-        gravitySucksID  , gravitySucks
-      |] |> Map.ofArray
-    BPM           = 84.F
-    LengthInBeats = 84
+  let mixer : Mixer =
+    {
+      NamedBitmapImages = Map.empty
+      NamedPresenters   = defaultPresenters
+      NamedScenes       =
+        [|
+          blackSceneID    , blackScene
+          redSceneID      , redScene
+          gravitySucksID  , gravitySucks
+        |] |> Map.ofArray
+      BPM           = 84.F
+      LengthInBeats = 84
 
-    InitialPresenter  = faderPresenterID
-    InitialStage0     = blackSceneID
-    InitialStage1     = gravitySucksID
+      InitialPresenter  = faderPresenterID
+      InitialStage0     = blackSceneID
+      InitialStage1     = gravitySucksID
 
-    Script        =
-      [|
-        0   , ApplyFader  <| fadeToStage1 4.F
-      |]
-  }
+      Script        =
+        [|
+          0   , ApplyFader  <| fadeToStage1 4.F
+        |]
+    }

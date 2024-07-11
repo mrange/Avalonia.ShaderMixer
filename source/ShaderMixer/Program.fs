@@ -69,7 +69,6 @@ module Program =
       }
 #endif
     let openALAudioMixer = AudioMixer.setupOpenALAudioMixer audioMixer
-    AudioMixer.playAudio openALAudioMixer
 
     GlobalState.openALAudioMixer <- Some openALAudioMixer
     try

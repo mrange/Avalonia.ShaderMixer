@@ -23,6 +23,8 @@ open FSharp.NativeInterop
 
 open Silk.NET.OpenAL
 
+open OpenGLMath
+
 type AudioChannels =
   | Mono
   | Stereo
@@ -40,6 +42,17 @@ type AudioMixer =
     Looping             : bool
     AudioBits           : AudioBits
   }
+  member x.EndTime =
+    let channels =
+      match x.AudioChannels with
+      | Mono  -> 1
+      | Stereo-> 2
+    let samples = 
+      match x.AudioBits with
+        | AudioBits8   bits -> bits.Length
+        | AudioBits16  bits -> bits.Length
+        | AudioBits16' bits -> bits.Length/2
+    float32 samples/float32 (channels*x.Frequency)
 
 type OpenALAudioMixer  =
   {
@@ -243,13 +256,13 @@ module AudioMixer =
     audioMixer.Al.GetSourceProperty (audioMixer.Source, SourceFloat.SecOffset, &pos)
     checkAL   al
     checkALC  alc audioMixer.Device
-
     pos
 
   let setAudioPositionInSec
     (audioMixer : OpenALAudioMixer)
     (pos        : float32         )
     : unit  =
+    let pos = clamp pos 0.F audioMixer.AudioMixer.EndTime
     let al  = audioMixer.Al
     let alc = audioMixer.Alc
 
@@ -265,6 +278,7 @@ module AudioMixer =
     (audioMixer : OpenALAudioMixer)
     (pitch      : float32         )
     : unit  =
+    let pitch = clamp pitch 0.F 4.F
     let al  = audioMixer.Al
     let alc = audioMixer.Alc
 
