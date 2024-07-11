@@ -1,10 +1,15 @@
 <UserControl 
-  xmlns="https://github.com/avaloniaui"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-  mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-  x:Class="ShaderMixer.PlaybackControl">
+  xmlns         ="https://github.com/avaloniaui"
+  xmlns:x       ="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d       ="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc      ="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:local   ="clr-namespace:ShaderMixer"
+  mc:Ignorable  ="d" 
+  d:DesignWidth ="800" 
+  d:DesignHeight="450"
+  x:Class       ="ShaderMixer.PlaybackControl"
+  x:DataType    = "local:PlaybackControlViewModel"
+  >
   <Grid>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="20"/>
@@ -19,22 +24,24 @@
     </Grid.RowDefinitions>
 
     <Slider 
-      Grid.Column ="1"
-      Grid.Row    ="1"
-      Minimum     ="0"
-      Maximum     ="60"
-      Value       ="30"
+      x:Name              ="_timeSlider"
+      Grid.Column         ="1"
+      Grid.Row            ="1"
+      Minimum             ="0"
+      Maximum             ="{Binding EndTime            , Mode=OneTime}"
+      Value               ="{Binding CurrentTime        , Mode=TwoWay}"
       HorizontalAlignment ="Stretch"
       VerticalAlignment   ="Center"
       />
     <Slider
+      x:Name              ="_pitchSlider"
       Grid.Column         ="2"
       Grid.Row            ="0"
       Grid.RowSpan        ="2"
       Orientation         ="Vertical"
       Minimum             ="0"
       Maximum             ="3"
-      Value               ="1"
+      Value               ="{Binding Pitch              , Mode=TwoWay}"
       HorizontalAlignment ="Center"
       VerticalAlignment   ="Stretch"
       />
@@ -53,8 +60,9 @@
         VerticalAlignment   ="Center"
         />
       <TextBlock 
+        x:Name              ="_timeLabel"
         TextAlignment       ="Right"
-        Text                ="25.5s"
+        Text                ="{Binding CurrentTimeLabel , Mode=OneWay}"
         VerticalAlignment   ="Center"
         Width               ="60"
         />
@@ -66,8 +74,9 @@
         VerticalAlignment   ="Center"
         />
       <TextBlock 
+        x:Name              ="_bpmLabel"
         TextAlignment       ="Right"
-        Text                ="120"
+        Text                ="{Binding BPM              , Mode=OneTime}"
         VerticalAlignment   ="Center"
         Width               ="40"
         />
@@ -79,8 +88,9 @@
         VerticalAlignment   ="Center"
         />
       <TextBlock 
+        x:Name              ="_beatLabel"
         TextAlignment       ="Right"
-        Text                ="12.25"
+        Text                ="{Binding BeatLabel        , Mode=OneWay}"
         VerticalAlignment   ="Center"
         Width               ="60"
         />
@@ -92,23 +102,27 @@
         VerticalAlignment   ="Center"
         />
       <TextBlock 
+        x:Name              ="_pitchLabel"
         TextAlignment       ="Right"
-        Text                ="1.5x"
+        Text                ="{Binding PitchLabel       , Mode=OneWay}"
         VerticalAlignment   ="Center"
         Width               ="30"
         />
 
       <Button 
+        x:Name              ="_playButton"
         Content             ="Play"
         Margin              ="12,0,0,0" 
         VerticalAlignment   ="Center"
         />
       <Button 
+        x:Name              ="_pauseButton"
         Content             ="Pause"
         Margin              ="4,0,0,0" 
         VerticalAlignment   ="Center"
         />
       <Button 
+        x:Name              ="_resetPitchButton"
         Content             ="Reset pitch"
         Margin              ="4,0,0,0" 
         VerticalAlignment   ="Center"

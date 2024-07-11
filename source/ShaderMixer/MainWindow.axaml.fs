@@ -60,7 +60,7 @@ type MainWindow () as this =
     match this.GetControl<Grid> "_grid" with
     | null  -> ()
     | grid  ->
-      let playBackControl = PlaybackControl ()
+      let playBackControl = PlaybackControl Setup.mixer
       playBackControl.HorizontalAlignment <- HorizontalAlignment.Stretch
       playBackControl.VerticalAlignment   <- VerticalAlignment.Bottom
       grid.Children.Add playBackControl

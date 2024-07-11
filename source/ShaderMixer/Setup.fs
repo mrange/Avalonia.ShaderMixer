@@ -34,8 +34,8 @@ let mixer : Mixer =
         redSceneID      , redScene
         gravitySucksID  , gravitySucks
       |] |> Map.ofArray
-    BPM           = 60.F
-    LengthInBeats = 60
+    BPM           = 84.F
+    LengthInBeats = 84
 
     InitialPresenter  = faderPresenterID
     InitialStage0     = blackSceneID
