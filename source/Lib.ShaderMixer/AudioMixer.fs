@@ -249,7 +249,7 @@ module AudioMixer =
   let setAudioPositionInSec
     (audioMixer : OpenALAudioMixer)
     (pos        : float32         )
-    : float32 =
+    : unit  =
     let al  = audioMixer.Al
     let alc = audioMixer.Alc
 
@@ -260,6 +260,19 @@ module AudioMixer =
     checkAL   al
     checkALC  alc audioMixer.Device
 
-    pos
+
+  let setAudioPitch
+    (audioMixer : OpenALAudioMixer)
+    (pitch      : float32         )
+    : unit  =
+    let al  = audioMixer.Al
+    let alc = audioMixer.Alc
+
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    audioMixer.Al.SetSourceProperty (audioMixer.Source, SourceFloat.Pitch, pitch)
+    checkAL   al
+    checkALC  alc audioMixer.Device
 
 

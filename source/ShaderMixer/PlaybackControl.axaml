@@ -111,18 +111,21 @@
 
       <Button 
         x:Name              ="_playButton"
+        Command             ="{Binding PlayCommand      , Mode=OneTime}"
         Content             ="Play"
         Margin              ="12,0,0,0" 
         VerticalAlignment   ="Center"
         />
       <Button 
         x:Name              ="_pauseButton"
+        Command             ="{Binding PauseCommand     , Mode=OneTime}"
         Content             ="Pause"
         Margin              ="4,0,0,0" 
         VerticalAlignment   ="Center"
         />
       <Button 
         x:Name              ="_resetPitchButton"
+        Command             ="{Binding ResetPitchCommand, Mode=OneTime}"
         Content             ="Reset pitch"
         Margin              ="4,0,0,0" 
         VerticalAlignment   ="Center"
