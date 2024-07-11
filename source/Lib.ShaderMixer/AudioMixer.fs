@@ -151,10 +151,6 @@ module AudioMixer =
     checkAL   al
     checkALC  alc device
 
-    al.SourcePlay source
-    checkAL   al
-    checkALC  alc device
-
     {
       AudioMixer  = audioMixer
       Device      = device
@@ -195,6 +191,45 @@ module AudioMixer =
     alc.Dispose ()
     al.Dispose ()
 
+  let playAudio
+    (audioMixer : OpenALAudioMixer)
+    : unit =
+    let al  = audioMixer.Al
+    let alc = audioMixer.Alc
+
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    al.SourcePlay audioMixer.Source
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+  let stopAudio
+    (audioMixer : OpenALAudioMixer)
+    : unit =
+    let al  = audioMixer.Al
+    let alc = audioMixer.Alc
+
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    al.SourceStop audioMixer.Source
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+  let pauseAudio
+    (audioMixer : OpenALAudioMixer)
+    : unit =
+    let al  = audioMixer.Al
+    let alc = audioMixer.Alc
+
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    al.SourcePause audioMixer.Source
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
   let getAudioPositionInSec
     (audioMixer : OpenALAudioMixer)
     : float32 =
@@ -210,4 +245,21 @@ module AudioMixer =
     checkALC  alc audioMixer.Device
 
     pos
+
+  let setAudioPositionInSec
+    (audioMixer : OpenALAudioMixer)
+    (pos        : float32         )
+    : float32 =
+    let al  = audioMixer.Al
+    let alc = audioMixer.Alc
+
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    audioMixer.Al.SetSourceProperty (audioMixer.Source, SourceFloat.SecOffset, pos)
+    checkAL   al
+    checkALC  alc audioMixer.Device
+
+    pos
+
 

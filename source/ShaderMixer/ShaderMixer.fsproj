@@ -15,6 +15,8 @@
   <ItemGroup>
     <Compile Include="ShaderSources.fs" />
     <Compile Include="Setup.fs" />
+    <Compile Include="GlobalState.fs" />
+    <Compile Include="PlaybackControl.axaml.fs" />
     <Compile Include="MainWindow.axaml.fs" />
     <Compile Include="App.axaml.fs" />
     <Compile Include="Program.fs" />

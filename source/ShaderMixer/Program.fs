@@ -38,7 +38,7 @@ module Program =
   [<EntryPoint; STAThread>]
   let main argv =
     let audioMixer : AudioMixer =
-#if !DEBUG
+#if TEST_AUDIO
       let tau = 2.*Math.PI |> float32
       let hz  = 440.F*tau/44100.F
       let audio : byte array = Array.init 44100 (fun i -> byte (128.F+127.F*sin (hz*float32 i)))
@@ -50,7 +50,7 @@ module Program =
         AudioBits           = AudioBits8 audio
       }
 #else
-      use waveFileReader  = new WaveFileReader (@"D:\assets\lug00ber - ursa major_bob_master.wav")
+      use waveFileReader  = new WaveFileReader (@"D:\assets\Kotovsky86 - To the Light.wav")
 
       let audioChannels = 
         match waveFileReader.WaveFormat.Channels with
@@ -69,6 +69,9 @@ module Program =
       }
 #endif
     let openALAudioMixer = AudioMixer.setupOpenALAudioMixer audioMixer
+    AudioMixer.playAudio openALAudioMixer
+
+    GlobalState.openALAudioMixer <- Some openALAudioMixer
     try
       buildAvaloniaApp().StartWithClassicDesktopLifetime(argv)
     finally

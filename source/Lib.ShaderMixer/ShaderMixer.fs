@@ -110,9 +110,9 @@ type MixerScene =
     Image         : SceneBuffer
   }
 
-type BeatTime     = float32 -> float32
+type BeatToTime   = float32 -> float32
 type Fader        = float32 -> float32
-type FaderFactory = BeatTime -> float32 -> Fader
+type FaderFactory = BeatToTime -> float32 -> Fader
 
 type ScriptPart =
   | SetPresenter  of PresenterID
@@ -135,6 +135,13 @@ type Mixer =
 
     Script            : (int*ScriptPart) array
   }
+
+  member x.BeatToTime (beat : float32) : float32 = 
+    beat*60.F/x.BPM
+
+  member x.TimeToBeat (time : float32) : float32 = 
+    time*x.BPM/60.F
+
 
 [<Struct>]
 type OpenGLBuffer         =
@@ -1091,7 +1098,6 @@ module Mixer =
         |> Map.ofArray
 
 
-      let beatTime beat =(mixer.BPM*beat)/60.F
       let faderStage0 : Fader = fun time -> 0.F
       let mutable presenter   = mapGet "the intitial presenter" namedPresenters mixer.InitialPresenter
       let mutable stage0      = mapGet "the intitial stage 0"   namedScenes     mixer.InitialStage0
@@ -1109,7 +1115,7 @@ module Mixer =
             | SetPresenter  pid   -> presenter  <- mapGet "the presenter" namedPresenters pid
             | SetStage0     sid   -> stage0     <- mapGet "stage0" namedScenes sid
             | SetStage1     sid   -> stage1     <- mapGet "stage1" namedScenes sid
-            | ApplyFader    faderf-> fader      <- faderf beatTime (float32 beat)
+            | ApplyFader    faderf-> fader      <- faderf mixer.BeatToTime (float32 beat)
         expandedScript.[beat] <-
           {
             Presenter = presenter
