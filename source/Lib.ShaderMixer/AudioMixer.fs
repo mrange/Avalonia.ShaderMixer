@@ -30,6 +30,7 @@ type AudioChannels =
 type AudioBits =
   | AudioBits8    of byte   array
   | AudioBits16   of int16  array
+  | AudioBits16'  of byte   array
 
 
 type AudioMixer =
@@ -121,14 +122,17 @@ module AudioMixer =
 
     let bufferFormat =
       match audioMixer.AudioChannels, audioMixer.AudioBits with
-      | Mono    , AudioBits8  _ -> BufferFormat.Mono8
-      | Mono    , AudioBits16 _ -> BufferFormat.Mono16
-      | Stereo  , AudioBits8  _ -> BufferFormat.Stereo8
-      | Stereo  , AudioBits16 _ -> BufferFormat.Stereo16
+      | Mono    , AudioBits8   _ -> BufferFormat.Mono8
+      | Mono    , AudioBits16  _ -> BufferFormat.Mono16
+      | Mono    , AudioBits16' _ -> BufferFormat.Mono16
+      | Stereo  , AudioBits8   _ -> BufferFormat.Stereo8
+      | Stereo  , AudioBits16  _ -> BufferFormat.Stereo16
+      | Stereo  , AudioBits16' _ -> BufferFormat.Stereo16
 
 
     match audioMixer.AudioBits with
-    | AudioBits8  bits -> 
+    | AudioBits8  bits
+    | AudioBits16' bits ->
       use ptr = fixed bits
       al.BufferData (buffer, bufferFormat, NativePtr.toVoidPtr ptr, bits.Length, audioMixer.Frequency)
       checkAL   al

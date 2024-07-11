@@ -23,6 +23,8 @@ open Avalonia
 
 open Lib.ShaderMixer
 
+open NAudio.Wave
+
 module Program =
 
   [<CompiledName "BuildAvaloniaApp">]
@@ -36,10 +38,10 @@ module Program =
   [<EntryPoint; STAThread>]
   let main argv =
     let audioMixer : AudioMixer =
+#if !DEBUG
       let tau = 2.*Math.PI |> float32
       let hz  = 440.F*tau/44100.F
       let audio : byte array = Array.init 44100 (fun i -> byte (128.F+127.F*sin (hz*float32 i)))
-
 
       {
         AudioChannels       = Mono
@@ -47,7 +49,25 @@ module Program =
         Looping             = true
         AudioBits           = AudioBits8 audio
       }
+#else
+      use waveFileReader  = new WaveFileReader (@"D:\assets\lug00ber - ursa major_bob_master.wav")
 
+      let audioChannels = 
+        match waveFileReader.WaveFormat.Channels with
+        | 1 -> Mono
+        | 2 -> Stereo
+        | n -> failwithf "WaveFormat.Channels expected to be either 1 or 2 but is %d" n
+
+      let bytes = Array.zeroCreate (int waveFileReader.Length)
+      ignore <| waveFileReader.Read (bytes, 0, bytes.Length)
+
+      {
+        AudioChannels       = audioChannels
+        Frequency           = waveFileReader.WaveFormat.SampleRate
+        Looping             = true
+        AudioBits           = AudioBits16' bytes
+      }
+#endif
     let openALAudioMixer = AudioMixer.setupOpenALAudioMixer audioMixer
     try
       buildAvaloniaApp().StartWithClassicDesktopLifetime(argv)

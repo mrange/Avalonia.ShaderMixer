@@ -62,6 +62,12 @@
         "resolved": "8.0.400-beta.24321.3",
         "contentHash": "iRTyTSKHMIHuq1RYsvEC3Q5/+wrq6J7zcANEpras0+26CR5/GMKSbmlQjF9z6wbS3miQI8/FPbvuygLYAAYeBg=="
       },
+      "NAudio.Core": {
+        "type": "Direct",
+        "requested": "[2.2.1, )",
+        "resolved": "2.2.1",
+        "contentHash": "GgkdP6K/7FqXFo7uHvoqGZTJvW4z8g2IffhOO4JHaLzKCdDOUEzVKtveoZkCuUX8eV2HAINqi7VFqlFndrnz/g=="
+      },
       "Avalonia.Angle.Windows.Natives": {
         "type": "Transitive",
         "resolved": "2.1.22045.20230930",
