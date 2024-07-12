@@ -50,7 +50,7 @@ module Program =
         AudioBits           = AudioBits8 audio
       }
 #else
-      use waveFileReader  = new WaveFileReader (@"D:\assets\Kotovsky86 - To the Light.wav")
+      use waveFileReader  = new WaveFileReader (@"D:\assets\virgill_-_hyperbased_-_omg_its_a_cube_-_amigaremix_02106.wav")
 
       let audioChannels = 
         match waveFileReader.WaveFormat.Channels with
@@ -64,7 +64,7 @@ module Program =
       {
         AudioChannels       = audioChannels
         Frequency           = waveFileReader.WaveFormat.SampleRate
-        Looping             = true
+        Looping             = false
         AudioBits           = AudioBits16' bytes
       }
 #endif

@@ -33,28 +33,35 @@ type Playback (openALAudioMixer : OpenALAudioMixer option) =
 
   let clock = Stopwatch.StartNew ()
 
-  let mutable devicePlaying           = false
-  let mutable playState               = PlayState.IsPaused
-  let mutable deltaWhileDevicePlaying = nanf
-  let mutable timeWhileDevicePaused   = 0.F
-  let mutable pitch                   = 1.F
+  let soundEndTime =
+    match openALAudioMixer with
+    | None        -> infinityf
+    | Some  oalm  -> oalm.AudioMixer.EndTime
+
+  let mutable devicePlaying             = false
+  let mutable playState                 = PlayState.IsPaused
+  let mutable timeWhileDevicePlaying    = nanf
+  let mutable offsetWhileDevicePlaying  = nanf
+  let mutable timeWhileDevicePaused     = 0.F
+  let mutable pitch                     = 1.F
 
   let globalTime () : float32 = float32 clock.ElapsedMilliseconds/1000.F
     
   let time () : float32 =
     let tm =
       if devicePlaying then
-        (globalTime () + deltaWhileDevicePlaying)*pitch
+        timeWhileDevicePlaying + (globalTime () + offsetWhileDevicePlaying)*pitch
       else
         timeWhileDevicePaused
 
     assert not (Single.IsNaN tm)
 
-    tm
+    Math.Clamp (tm, 0.F, soundEndTime)
 
   let playDevice () =
     assert not devicePlaying
-    deltaWhileDevicePlaying <- timeWhileDevicePaused - globalTime ()
+    timeWhileDevicePlaying    <- timeWhileDevicePaused
+    offsetWhileDevicePlaying  <- - globalTime ()
     match openALAudioMixer with
     | None        -> ()
     | Some  oalm  ->
@@ -72,8 +79,9 @@ type Playback (openALAudioMixer : OpenALAudioMixer option) =
     | Some  oalm  ->
       AudioMixer.pauseAudio oalm
 
-    deltaWhileDevicePlaying <- nanf
-    devicePlaying           <- false
+    timeWhileDevicePlaying    <- nanf
+    offsetWhileDevicePlaying  <- nanf
+    devicePlaying             <- false
 
   let pause () : unit =
     playState <-
@@ -100,7 +108,8 @@ type Playback (openALAudioMixer : OpenALAudioMixer option) =
   let setPitch (p : float32) : unit =
     let time = time ()
     if devicePlaying then
-      deltaWhileDevicePlaying <- time - globalTime ()
+      timeWhileDevicePlaying    <- time
+      offsetWhileDevicePlaying  <- - globalTime ()
     else
       ()
 

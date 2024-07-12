@@ -35,8 +35,8 @@ module Setup =
           redSceneID      , redScene
           gravitySucksID  , gravitySucks
         |] |> Map.ofArray
-      BPM           = 84.F
-      LengthInBeats = 84
+      BPM           = 142.F
+      LengthInBeats = 576
 
       InitialPresenter  = faderPresenterID
       InitialStage0     = blackSceneID

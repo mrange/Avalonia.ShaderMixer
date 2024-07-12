@@ -119,7 +119,7 @@ type PlaybackControl (mixer: Mixer, playback : Playback) as this =
 
     let refreshTimer = 
       let dt = DispatcherTimer ()
-      dt.Interval <- TimeSpan.FromMilliseconds 1000
+      dt.Interval <- TimeSpan.FromMilliseconds 500
       dt.Tick.AddHandler (EventHandler onRefresh)
       dt
 
