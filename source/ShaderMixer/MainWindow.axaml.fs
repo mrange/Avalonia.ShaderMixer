@@ -39,6 +39,20 @@ type MainWindow () as this =
 #endif
     AvaloniaXamlLoader.Load(this)
 
+    Setup.renderText
+      512
+      512
+      128
+      "Helvetica"
+      84
+      [|
+        "Jez"
+        "Glimglam"
+        "Lance"
+        "Longshot"
+      |]
+
+
     let playBack = Playback GlobalState.openALAudioMixer
 
     let clock () = playBack.Time ()

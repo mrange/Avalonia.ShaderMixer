@@ -306,15 +306,6 @@ type OpenGLMixer =
   member x.ContextIsSame (o : IGlContext) =
     obj.ReferenceEquals (x.GlContext, o)
 
-module OpenGLMath =
-  let inline clamp x minVal maxVal = min (max x minVal) maxVal
-
-  let mix (x : float32) (y : float32) (a : float32) = x*(1.F-a)+y*a
-
-  let smoothstep (edge0 : float32) (edge1 : float32) (x : float32) : float32 =
-    let t = clamp ((x - edge0) / (edge1 - edge0)) 0.F 1.F
-    t * t * (3.F - 2.F * t)
-
 module Mixer =
   open OpenGLMath
 

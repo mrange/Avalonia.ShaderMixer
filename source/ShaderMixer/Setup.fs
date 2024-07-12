@@ -20,8 +20,56 @@ namespace ShaderMixer
 module Setup =
   open Lib.ShaderMixer
 
+  open Avalonia
+  open Avalonia.Controls
+  open Avalonia.Media
+  open Avalonia.Media.Imaging
+
+  open System.Globalization
+
   open Scripting
 
+  let renderText
+    (width      : int         )
+    (height     : int         )
+    (textHeight : int         )
+    (fontFamily : string      )
+    (fontSize   : float       )
+    (texts      : string array)
+    =
+    use rtb = new RenderTargetBitmap (PixelSize (width,height), Vector (96., 96.))
+
+    do
+      let ro = RenderOptions (
+          EdgeMode          = EdgeMode.Antialias
+        , TextRenderingMode = TextRenderingMode.Antialias
+        )
+      use dc = rtb.CreateDrawingContext ()
+      use popRo = dc.PushRenderOptions ro
+
+      let tf = Typeface fontFamily
+
+      for i = 0 to texts.Length-1 do
+        let text = texts.[i]
+
+        let ft = FormattedText (
+            text
+          , CultureInfo.InvariantCulture
+          , FlowDirection.LeftToRight
+          , tf
+          , fontSize
+          , Brushes.White
+          )
+        ft.TextAlignment  <- TextAlignment.Center
+        ft.MaxTextWidth   <- width
+        ft.MaxTextHeight  <- height
+        ft.MaxLineCount   <- 1
+
+        dc.DrawText (ft, Point (0., float (i*textHeight)))
+
+    rtb.Save (@"D:\assets\testing.png")
+
+    ()
   let gravitySucksID  = SceneID "gravitySucks"
   let gravitySucks    = basicScene ShaderSources.gravitySucks
 
