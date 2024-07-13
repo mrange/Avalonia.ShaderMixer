@@ -36,12 +36,12 @@ module Setup =
   open Scripting
 
   module Loops =
-    let rec bgraTorgbaIplace (pixels : byte array) i =
+    let rec flipXZ (pixels : byte array) i =
       if i < pixels.Length then
         let tmp     = pixels.[i]
         pixels.[i]  <- pixels.[i + 2]
         pixels.[i+2]<- tmp
-        bgraTorgbaIplace pixels (i + 4)
+        flipXZ pixels (i + 4)
 
     let rec flipYAxis bwidth (line : byte array) (pixels : byte array) f t =
       if f < t then
@@ -53,9 +53,41 @@ module Setup =
 
         flipYAxis bwidth line pixels (f + 1) (t - 1)
 
+  let dpi96 = Vector (96., 96.)
+
+  let bitmapImageToBitmap 
+    (bitmapImage : MixerBitmapImage)
+    : Bitmap =
+
+    use ptr = fixed bitmapImage.Bits
+    
+    let pf =
+      match bitmapImage.Format with
+      | RGBA8 -> PixelFormats.Rgba8888
+      | R8    -> PixelFormats.Gray8
+
+    new Bitmap (
+        pf
+      , AlphaFormat.Unpremul
+      , NativePtr.toNativeInt ptr
+      , PixelSize (bitmapImage.Width, bitmapImage.Height)
+      , dpi96
+      , bitmapImage.Width*bitmapImage.PixelByteSize ()
+      )
+
   let bitmapToMixerBitmapImage 
-    (bitmap : Bitmap    )
+    (bitmap     : Bitmap    )
+    (flipYAxis  : bool      )
     : MixerBitmapImage =
+
+    let flipXZ =
+      if bitmap.Format.HasValue then
+        let pf = bitmap.Format.Value
+        if    pf = PixelFormats.Bgra8888 then true
+        elif  pf = PixelFormats.Rgba8888 then false
+        else  failwithf "Unsupported pixel format on Bitmap: %s" (pf.ToString ())
+      else
+        failwith "No pixel format set on bitmap"
 
     let sz      = bitmap.Size
     let height  = int sz.Height
@@ -77,8 +109,10 @@ module Setup =
 
     let line : byte array = Array.create bwidth 0uy
 
-    Loops.bgraTorgbaIplace pixels 0
-    Loops.flipYAxis bwidth line pixels 0 (height - 1)
+    if flipXZ then
+      Loops.flipXZ pixels 0
+    if flipYAxis then
+      Loops.flipYAxis bwidth line pixels 0 (height - 1)
 
     let mbi : MixerBitmapImage = 
       {
@@ -98,7 +132,7 @@ module Setup =
 
     use bitmap = new Bitmap (fileName)
 
-    bitmapToMixerBitmapImage bitmap
+    bitmapToMixerBitmapImage bitmap true
 
   let renderTextImage
     (width      : int         )
@@ -108,13 +142,14 @@ module Setup =
     (fontSize   : float       )
     (texts      : string array)
     =
-    use rtb = new RenderTargetBitmap (PixelSize (width,height), Vector (96., 96.))
+    use rtb = new RenderTargetBitmap (PixelSize (width, height), dpi96)
 
     do
       let ro = RenderOptions (
           EdgeMode          = EdgeMode.Antialias
         , TextRenderingMode = TextRenderingMode.Antialias
         )
+      
       use dc = rtb.CreateDrawingContext ()
       use _  = dc.PushRenderOptions ro
 
@@ -138,7 +173,7 @@ module Setup =
 
         dc.DrawText (ft, Point (0., float (i*textHeight)))
 
-    bitmapToMixerBitmapImage rtb
+    bitmapToMixerBitmapImage rtb true
 
   let createMixer () : Mixer = 
     let gravitySucksID  = SceneID "gravitySucks"
@@ -147,13 +182,15 @@ module Setup =
     let darkHero1ID       = BitmapImageID "ai-dark-hero-1"
     let darkHero1         = loadBitmapFromFile @"d:\assets\ai-dark-hero-1.jpg"
     let impulseMembersID  = BitmapImageID "impulse-members"
+
+    let upScale = 4
     let impulseMembers    = 
       renderTextImage 
-        512 
-        512 
-        128 
+        (upScale*512)
+        (upScale*512) 
+        (upScale*128)
         "Helvetica" 
-        84 
+        (float (upScale*84 ))
         [|
           "Jez"
           "Glimglam"
@@ -163,10 +200,16 @@ module Setup =
 
     let impulseMembersDistanceField = 
       DistanceField.createDistanceField
-        64
+        (upScale*64)
         0.25
         0
         impulseMembers
+
+    use bmp = bitmapImageToBitmap impulseMembersDistanceField
+    let smallerBmp = bmp.CreateScaledBitmap (PixelSize (512, 512), BitmapInterpolationMode.HighQuality)
+
+    let impulseMembersDistanceField = 
+      bitmapToMixerBitmapImage smallerBmp false
 
 #if DEBUG
     Debug.saveAsPng impulseMembers              @"d:\assets\impulse-members.png"
