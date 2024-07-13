@@ -23,30 +23,39 @@ module DistanceField =
   open OpenGLMath
 
   let createDistanceField 
-    (radius  : int          )
-    (cutoff  : float        )
-    (buffer  : int          )
-    (pwidth  : int          )
-    (pheight : int          )
-    (pixels  : byte   array ) 
-    : int*int*byte array =
+    (radius     : int               )
+    (cutoff     : float             )
+    (buffer     : int               )
+    (bitmapImage: MixerBitmapImage  )
+    : MixerBitmapImage =
 
     let radius  = float radius
 
     let inf     = 1E20
 
+    let pwidth  = bitmapImage.Width
+    let pheight = bitmapImage.Height
+    let bits    = bitmapImage.Bits
+
     let width   = pwidth  + 2*buffer
     let height  = pheight + 2*buffer
     let size    = max width height
+    let psize   = bitmapImage.PixelByteSize ()
+    let poff    = 
+      match bitmapImage.Format with
+      | RGBA8 -> 3
+      | R8    -> 0
+
     let gridOuter : float   array = Array.create (width * height) inf
     let gridInner : float   array = Array.zeroCreate (width * height)
     let f         : float   array = Array.zeroCreate (size)
     let z         : float   array = Array.zeroCreate (size + 1)
     let v         : int     array = Array.zeroCreate (size)
 
+
     for y = 0 to pheight - 1 do
       for x = 0 to pwidth - 1 do
-        let a = pixels.[x+y*pwidth]
+        let a = bits.[(x+y*pwidth)*psize+poff]
 
         let off = x + buffer + (y + buffer)*width
 
@@ -125,5 +134,10 @@ module DistanceField =
       let d = clamp d 0. 255.0
       data.[i] <- byte d
 
-    width, height, data
+    {
+      Width   = width
+      Height  = height
+      Format  = BitmapImageFormat.R8
+      Bits    = data
+    }
 

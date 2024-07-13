@@ -54,7 +54,7 @@ module Setup =
         flipYAxis bwidth line pixels (f + 1) (t - 1)
 
   let bitmapToMixerBitmapImage 
-    (bitmap : Bitmap) 
+    (bitmap : Bitmap    )
     : MixerBitmapImage =
 
     let sz      = bitmap.Size
@@ -84,8 +84,8 @@ module Setup =
       {
         Width     = width 
         Height    = height
-        Format    = RGBA
-        RGBABits  = pixels
+        Format    = RGBA8
+        Bits      = pixels
       }
 
     mbi.Validate ()
@@ -100,7 +100,7 @@ module Setup =
 
     bitmapToMixerBitmapImage bitmap
 
-  let renderText
+  let renderTextImage
     (width      : int         )
     (height     : int         )
     (textHeight : int         )
@@ -145,9 +145,37 @@ module Setup =
     let jezID           = SceneID "jez"
 
     let darkHero1ID       = BitmapImageID "ai-dark-hero-1"
+    let darkHero1         = loadBitmapFromFile @"d:\assets\ai-dark-hero-1.jpg"
+    let impulseMembersID  = BitmapImageID "impulse-members"
+    let impulseMembers    = 
+      renderTextImage 
+        512 
+        512 
+        128 
+        "Helvetica" 
+        84 
+        [|
+          "Jez"
+          "Glimglam"
+          "Lance"
+          "Longshot" 
+        |]
+
+    let impulseMembersDistanceField = 
+      DistanceField.createDistanceField
+        64
+        0.25
+        0
+        impulseMembers
+
+#if DEBUG
+    Debug.saveAsPng impulseMembers              @"d:\assets\impulse-members.png"
+    Debug.saveAsPng impulseMembersDistanceField @"d:\assets\impulse-members-distance.png"
+#endif
     let namedBitmapImages = 
       [|
-        darkHero1ID, loadBitmapFromFile @"d:\assets\ai-dark-hero-1.jpg"
+        darkHero1ID     , darkHero1
+        impulseMembersID, impulseMembers
       |] |> Map.ofArray
 
     let gravitySucks    = basicScene ShaderSources.gravitySucks
@@ -156,24 +184,9 @@ module Setup =
       { jez with
           Image =
             { jez.Image with
-                Channel0 = basicImageBufferChannel' darkHero1ID
+                Channel0 = basicImageBufferChannel' impulseMembersID
             }
       }
-    (*
-    Setup.renderText
-      512
-      512
-      128
-      "Helvetica"
-      84
-      [|
-        "Jez"
-        "Glimglam"
-        "Lance"
-        "Longshot"
-      |]
-    *)
-
 
     {
       NamedBitmapImages = namedBitmapImages

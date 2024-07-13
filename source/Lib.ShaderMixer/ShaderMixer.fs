@@ -38,24 +38,24 @@ open type Avalonia.OpenGL.GlConsts
 open type Lib.ShaderMixer.OpenGLExt.GlConstsExt
 
 type BitmapImageFormat =
-  | RGBA
-  | R
+  | RGBA8
+  | R8
 
 type MixerBitmapImage =
   {
     Width     : int
     Height    : int
     Format    : BitmapImageFormat
-    RGBABits  : byte[]
+    Bits      : byte[]
   }
 
   member x.PixelByteSize () : int =
     match x.Format with
-    | RGBA  -> 4
-    | R     -> 1
+    | RGBA8 -> 4
+    | R8    -> 1
 
   member x.Validate () =
-    if x.Width*x.Height*x.PixelByteSize () <> x.RGBABits.Length then
+    if x.Width*x.Height*x.PixelByteSize () <> x.Bits.Length then
       failwithf "BitmapImage dimensions don't match the bits"
 
 type BitmapImageID  = BitmapImageID of string
@@ -513,12 +513,12 @@ module Mixer =
       checkGL gl
 
       do
-        use ptr = fixed mixerBitmapImage.RGBABits
+        use ptr = fixed mixerBitmapImage.Bits
         let data = NativePtr.toNativeInt ptr
         let internalFormat, format =
           match mixerBitmapImage.Format with
-          | RGBA  -> GL_RGBA8   , GL_RGBA
-          | R     -> GL_R8      , GL_RED
+          | RGBA8 -> GL_RGBA8   , GL_RGBA
+          | R8    -> GL_R8      , GL_RED
         gl.TexImage2D (GL_TEXTURE_2D, 0, internalFormat, mixerBitmapImage.Width, mixerBitmapImage.Height, 0, format, GL_UNSIGNED_BYTE, data)
         checkGL gl
 
@@ -1139,8 +1139,31 @@ module Mixer =
 
       expandedScript
 
+    module Loops =
+      let rec toOpacityMask (f : byte array) (t : byte array) fi ti =
+        if fi < f.Length then
+          t.[ti] <- f.[fi]
+          toOpacityMask f t (fi + 4) (ti + 1)
 
   open Internals
+
+  let toOpacityMask (bitMapImage : MixerBitmapImage) : MixerBitmapImage =
+    bitMapImage.Validate ()
+    match bitMapImage.Format with
+    | RGBA8 ->
+      let bits = Array.create (bitMapImage.Width*bitMapImage.Height) 0uy
+
+      Loops.toOpacityMask bitMapImage.Bits bits 3 0
+
+      let mbi =
+        { bitMapImage with
+            Format    = R8
+            Bits      = bits
+        }
+      mbi.Validate ()
+
+      mbi
+    | R8    -> bitMapImage
 
   let setupOpenGLMixer
     (glContext  : IGlContext  )

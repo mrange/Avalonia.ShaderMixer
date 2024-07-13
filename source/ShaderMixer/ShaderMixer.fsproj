@@ -16,6 +16,7 @@
     <Compile Include="ShaderSources.fs" />
     <Compile Include="Playback.fs" />
     <Compile Include="GlobalState.fs" />
+    <Compile Include="Debug.fs" />
     <Compile Include="Setup.fs" />
     <Compile Include="PlaybackControl.axaml.fs" />
     <Compile Include="MainWindow.axaml.fs" />
@@ -31,6 +32,7 @@
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.0-rc2" />
     <PackageReference Include="NAudio.Core" Version="2.2.1" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4" />
   </ItemGroup>
 
   <ItemGroup>
