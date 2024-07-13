@@ -22,6 +22,25 @@ module ShaderSources
 //  found on ShaderToy that have their own individual license which I have no right
 //  or want to relicense to GPL v3
 
+let jez = """
+vec3 image(vec2 p) {
+  const float dist = 1.;
+  float dx = tanh(dist*p.x)/dist;
+  p.x = dx;
+  p *= 0.5;
+  p += 0.5;
+  return texture(iChannel0, p).xyz-0.3*abs(dx);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 q = fragCoord/iResolution.xy;
+  vec2 p = -1.+2.*q;
+  p.x *= iResolution.x/iResolution.y;
+  vec3 col = image(p);
+  fragColor = vec4(col, 1.);
+}
+"""
+
 let gravitySucks = """
 // CC0: Gravity sucks
 //  Tinkering away....

@@ -517,8 +517,8 @@ module Mixer =
         let data = NativePtr.toNativeInt ptr
         let internalFormat, format =
           match mixerBitmapImage.Format with
-          | RGBA  -> GL_RGBA32F , GL_RGBA
-          | R     -> GL_R32F    , GL_RED
+          | RGBA  -> GL_RGBA8   , GL_RGBA
+          | R     -> GL_R8      , GL_RED
         gl.TexImage2D (GL_TEXTURE_2D, 0, internalFormat, mixerBitmapImage.Width, mixerBitmapImage.Height, 0, format, GL_UNSIGNED_BYTE, data)
         checkGL gl
 

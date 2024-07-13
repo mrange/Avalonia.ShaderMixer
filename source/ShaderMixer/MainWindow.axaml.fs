@@ -39,38 +39,23 @@ type MainWindow () as this =
 #endif
     AvaloniaXamlLoader.Load(this)
 
-    (*
-    Setup.renderText
-      512
-      512
-      128
-      "Helvetica"
-      84
-      [|
-        "Jez"
-        "Glimglam"
-        "Lance"
-        "Longshot"
-      |]
-    *)
-
+    let mixer = Setup.createMixer ()
 
     let playBack = Playback GlobalState.openALAudioMixer
 
     let clock () = playBack.Time ()
 
-    let shaderMixer = ShaderMixerControl (Setup.mixer, clock)
+    let shaderMixer = ShaderMixerControl (mixer, clock)
     shaderMixer.RenderScaling <- this.RenderScaling
 
     match this.GetControl<ContentControl> "_content" with
     | null  -> ()
     | cc    -> cc.Content          <- shaderMixer
 
-
     match this.GetControl<Grid> "_grid" with
     | null  -> ()
     | grid  ->
-      let playBackControl = PlaybackControl (Setup.mixer, playBack)
+      let playBackControl = PlaybackControl (mixer, playBack)
       playBackControl.HorizontalAlignment <- HorizontalAlignment.Stretch
       playBackControl.VerticalAlignment   <- VerticalAlignment.Bottom
       grid.Children.Add playBackControl

@@ -26,6 +26,7 @@ public static class GlConstsExt
     public const int GL_CLAMP                           = 0x2900;
     public const int GL_REPEAT                          = 0x2901;
     public const int GL_CLAMP_TO_EDGE                   = 0x812F;
+    public const int GL_R8                              = 0x8229;
     public const int GL_R32F                            = 0x822E;
     public const int GL_MIRRORED_REPEAT                 = 0x8370;
     public const int GL_RGBA32F                         = 0x8814;

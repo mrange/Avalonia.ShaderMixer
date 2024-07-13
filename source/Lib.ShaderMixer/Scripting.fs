@@ -57,6 +57,16 @@ module Scripting =
         }
     }
 
+  let basicImageBufferChannel bitmapImage : BufferChannel =
+    {
+      Filter  = Linear
+      Source  = BitmapImage bitmapImage
+      Wrap    = Clamp
+    }
+
+  let basicImageBufferChannel' bitmapImage : BufferChannel option =
+    basicImageBufferChannel bitmapImage |> Some
+  
   let blackSceneID      = SceneID "black"
   let blackScene        = basicScene ShaderSources.fragmentShaderBlack
 

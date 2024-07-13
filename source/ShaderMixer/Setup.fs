@@ -35,6 +35,24 @@ module Setup =
 
   open Scripting
 
+  module Loops =
+    let rec bgraTorgbaIplace (pixels : byte array) i =
+      if i < pixels.Length then
+        let tmp     = pixels.[i]
+        pixels.[i]  <- pixels.[i + 2]
+        pixels.[i+2]<- tmp
+        bgraTorgbaIplace pixels (i + 4)
+
+    let rec flipYAxis bwidth (line : byte array) (pixels : byte array) f t =
+      if f < t then
+        let fi = f*bwidth
+        let ti = t*bwidth
+        System.Array.Copy (pixels, fi, line  ,  0, bwidth)
+        System.Array.Copy (pixels, ti, pixels, fi, bwidth)
+        System.Array.Copy (line  ,  0, pixels, ti, bwidth)
+
+        flipYAxis bwidth line pixels (f + 1) (t - 1)
+
   let bitmapToMixerBitmapImage 
     (bitmap : Bitmap) 
     : MixerBitmapImage =
@@ -42,8 +60,9 @@ module Setup =
     let sz      = bitmap.Size
     let height  = int sz.Height
     let width   = int sz.Width
+    let bwidth  = width*4
 
-    let pixels : byte array = Array.create (width*height*4) 0uy
+    let pixels : byte array = Array.create (bwidth*height) 0uy
 
     do
       use ptr = fixed pixels
@@ -55,6 +74,11 @@ module Setup =
         )
 
     // rtb.Save (@"D:\assets\testing.png")
+
+    let line : byte array = Array.create bwidth 0uy
+
+    Loops.bgraTorgbaIplace pixels 0
+    Loops.flipYAxis bwidth line pixels 0 (height - 1)
 
     let mbi : MixerBitmapImage = 
       {
@@ -116,27 +140,57 @@ module Setup =
 
     bitmapToMixerBitmapImage rtb
 
-  let gravitySucksID  = SceneID "gravitySucks"
-  let gravitySucks    = basicScene ShaderSources.gravitySucks
+  let createMixer () : Mixer = 
+    let gravitySucksID  = SceneID "gravitySucks"
+    let jezID           = SceneID "jez"
 
-  let fireLord1       = loadBitmapFromFile @"d:\assets\ai-firelord-1.jpg"
+    let darkHero1ID       = BitmapImageID "ai-dark-hero-1"
+    let namedBitmapImages = 
+      [|
+        darkHero1ID, loadBitmapFromFile @"d:\assets\ai-dark-hero-1.jpg"
+      |] |> Map.ofArray
 
-  let mixer : Mixer =
+    let gravitySucks    = basicScene ShaderSources.gravitySucks
+    let jez             = basicScene ShaderSources.jez
+    let jez             =
+      { jez with
+          Image =
+            { jez.Image with
+                Channel0 = basicImageBufferChannel' darkHero1ID
+            }
+      }
+    (*
+    Setup.renderText
+      512
+      512
+      128
+      "Helvetica"
+      84
+      [|
+        "Jez"
+        "Glimglam"
+        "Lance"
+        "Longshot"
+      |]
+    *)
+
+
     {
-      NamedBitmapImages = Map.empty
+      NamedBitmapImages = namedBitmapImages
       NamedPresenters   = defaultPresenters
       NamedScenes       =
         [|
           blackSceneID    , blackScene
           redSceneID      , redScene
           gravitySucksID  , gravitySucks
+          jezID           , jez
         |] |> Map.ofArray
       BPM           = 142.F
       LengthInBeats = 576
 
       InitialPresenter  = faderPresenterID
       InitialStage0     = blackSceneID
-      InitialStage1     = gravitySucksID
+      InitialStage1     = jezID
 
       Script        =
         [|
