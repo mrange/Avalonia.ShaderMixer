@@ -141,6 +141,7 @@ module Setup =
     (fontFamily : string      )
     (fontSize   : float       )
     (texts      : string array)
+    : MixerBitmapImage
     =
     use rtb = new RenderTargetBitmap (PixelSize (width, height), dpi96)
 
@@ -175,6 +176,41 @@ module Setup =
 
     bitmapToMixerBitmapImage rtb true
 
+  let renderTextDistanceField
+    (upScale    : int         )
+    (width      : int         )
+    (height     : int         )
+    (textHeight : int         )
+    (fontFamily : string      )
+    (fontSize   : float       )
+    (radius     : int         )
+    (cutOff     : float       )
+    (buffer     : int         )
+    (texts      : string array)
+    : MixerBitmapImage =
+    let upScale   = OpenGLMath.clamp upScale 1 16
+
+    let textImage = 
+      renderTextImage 
+        (upScale*width)
+        (upScale*height) 
+        (upScale*textHeight)
+        fontFamily
+        (float upScale*fontSize)
+        texts
+
+    let distanceField = 
+      DistanceField.createDistanceField
+        (upScale*radius)
+        cutOff
+        (buffer*upScale)
+        textImage
+
+    use bitmap = bitmapImageToBitmap distanceField
+    let smallerBitmap = bitmap.CreateScaledBitmap (PixelSize (width, height), BitmapInterpolationMode.HighQuality)
+
+    bitmapToMixerBitmapImage smallerBitmap false
+
   let createMixer () : Mixer = 
     let gravitySucksID  = SceneID "gravitySucks"
     let jezID           = SceneID "jez"
@@ -183,42 +219,31 @@ module Setup =
     let darkHero1         = loadBitmapFromFile @"d:\assets\ai-dark-hero-1.jpg"
     let impulseMembersID  = BitmapImageID "impulse-members"
 
-    let upScale = 4
-    let impulseMembers    = 
-      renderTextImage 
-        (upScale*512)
-        (upScale*512) 
-        (upScale*128)
-        "Helvetica" 
-        (float (upScale*84 ))
+    let impulseMembersDistanceField =
+      renderTextDistanceField
+        8
+        256
+        256
+        64
+        "Helvetica"
+        42.
+        32
+        0.25
+        0
         [|
           "Jez"
           "Glimglam"
           "Lance"
-          "Longshot" 
+          "Longshot"
         |]
 
-    let impulseMembersDistanceField = 
-      DistanceField.createDistanceField
-        (upScale*64)
-        0.25
-        0
-        impulseMembers
-
-    use bmp = bitmapImageToBitmap impulseMembersDistanceField
-    let smallerBmp = bmp.CreateScaledBitmap (PixelSize (512, 512), BitmapInterpolationMode.HighQuality)
-
-    let impulseMembersDistanceField = 
-      bitmapToMixerBitmapImage smallerBmp false
-
 #if DEBUG
-    Debug.saveAsPng impulseMembers              @"d:\assets\impulse-members.png"
     Debug.saveAsPng impulseMembersDistanceField @"d:\assets\impulse-members-distance.png"
 #endif
     let namedBitmapImages = 
       [|
         darkHero1ID     , darkHero1
-        impulseMembersID, impulseMembers
+        impulseMembersID, impulseMembersDistanceField
       |] |> Map.ofArray
 
     let gravitySucks    = basicScene ShaderSources.gravitySucks
