@@ -37,15 +37,25 @@ open type Avalonia.OpenGL.GlConsts
 
 open type Lib.ShaderMixer.OpenGLExt.GlConstsExt
 
+type BitmapImageFormat =
+  | RGBA
+  | R
+
 type MixerBitmapImage =
   {
     Width     : int
     Height    : int
+    Format    : BitmapImageFormat
     RGBABits  : byte[]
   }
 
+  member x.PixelByteSize () : int =
+    match x.Format with
+    | RGBA  -> 4
+    | R     -> 1
+
   member x.Validate () =
-    if x.Width*x.Height*4 <> x.RGBABits.Length then
+    if x.Width*x.Height*x.PixelByteSize () <> x.RGBABits.Length then
       failwithf "BitmapImage dimensions don't match the bits"
 
 type BitmapImageID  = BitmapImageID of string
@@ -190,14 +200,15 @@ type OpenGLUniformLocation=
 
 type OpenGLMixerBitmapImage =
   {
-    MixerBitmapImage : MixerBitmapImage
-    Texture     : OpenGLTexture
+    MixerBitmapImage  : MixerBitmapImage
+    Texture           : OpenGLTexture
   }
 
 type OpenGLStageTexture =
   {
-    Texture0 : OpenGLTexture
-    Texture1 : OpenGLTexture
+    RenderingOrder  : int
+    Texture0        : OpenGLTexture
+    Texture1        : OpenGLTexture
   }
   member x.ForegroundTexture frameNo =
     if (frameNo &&& 1 = 0) then x.Texture0 else x.Texture1
@@ -205,6 +216,11 @@ type OpenGLStageTexture =
   member x.BackgroundTexture frameNo =
     if (frameNo &&& 1 = 0) then x.Texture1 else x.Texture0
 
+  member x.Texture currentRenderingOrder frameNo =
+    if currentRenderingOrder > x.RenderingOrder then
+      x.ForegroundTexture frameNo
+    else
+      x.BackgroundTexture frameNo
 type OpenGLBufferChannel =
   {
     BufferChannel   : BufferChannel
@@ -219,6 +235,8 @@ type OpenGLPresenterChannel =
 
 type OpenGLSceneBuffer =
   {
+    RenderingOrder      : int
+
     SceneBuffer         : SceneBuffer
 
     Channel0            : OpenGLBufferChannel voption
@@ -497,7 +515,11 @@ module Mixer =
       do
         use ptr = fixed mixerBitmapImage.RGBABits
         let data = NativePtr.toNativeInt ptr
-        gl.TexImage2D (GL_TEXTURE_2D, 0, GL_RGBA32F, mixerBitmapImage.Width, mixerBitmapImage.Height, 0, GL_RGBA, GL_FLOAT, data)
+        let internalFormat, format =
+          match mixerBitmapImage.Format with
+          | RGBA  -> GL_RGBA32F , GL_RGBA
+          | R     -> GL_R32F    , GL_RED
+        gl.TexImage2D (GL_TEXTURE_2D, 0, internalFormat, mixerBitmapImage.Width, mixerBitmapImage.Height, 0, format, GL_UNSIGNED_BYTE, data)
         checkGL gl
 
       gl.BindTexture (GL_TEXTURE_2D, 0)
@@ -506,14 +528,16 @@ module Mixer =
       texture
 
     let createOpenGLStageTexture
-      (gl         : GlInterface   )
-      (glext      : GlInterfaceExt)
-      (resolution : Vector2       )
+      (gl               : GlInterface   )
+      (glext            : GlInterfaceExt)
+      (resolution       : Vector2       )
+      (renderingOrder   : int           )
       : OpenGLStageTexture =
 
       {
-        Texture0 = createTexture gl glext resolution
-        Texture1 = createTexture gl glext resolution
+        RenderingOrder  = renderingOrder
+        Texture0        = createTexture gl glext resolution
+        Texture1        = createTexture gl glext resolution
       }
 
     let createOpenGLBufferChannel
@@ -525,8 +549,8 @@ module Mixer =
       : OpenGLBufferChannel =
 
       {
-        BufferChannel = bufferChannel
-        Location      = getUniformLocation gl glext program name
+        BufferChannel   = bufferChannel
+        Location        = getUniformLocation gl glext program name
       }
 
     let createOpenGLBufferChannel'
@@ -620,17 +644,19 @@ module Mixer =
       struct (vertexShader, fragmentShader, program, mixLocation, resolutionUniformLocation, timeUniformLocation)
 
     let createOpenGLSceneBuffer
-      (gl           : GlInterface   )
-      (glext        : GlInterfaceExt)
-      (SceneID        sceneID       )
-      (mixerScene   : MixerScene    )
-      (sceneBuffer  : SceneBuffer   )
+      (gl             : GlInterface   )
+      (glext          : GlInterfaceExt)
+      (SceneID        sceneID         )
+      (mixerScene     : MixerScene    )
+      (renderingOrder : int           )
+      (sceneBuffer    : SceneBuffer   )
       : OpenGLSceneBuffer =
 
       let struct (vertexShader, fragmentShader, program, mixLocation, resolutionUniformLocation, timeUniformLocation) =
         createProgram gl glext sceneID mixerScene.Common mixerScene.Defines sceneBuffer.FragmentSource
 
       {
+        RenderingOrder      = renderingOrder
         SceneBuffer         = sceneBuffer
         Channel0            = createOpenGLBufferChannel' gl glext program "iChannel0" sceneBuffer.Channel0
         Channel1            = createOpenGLBufferChannel' gl glext program "iChannel1" sceneBuffer.Channel1
@@ -647,16 +673,17 @@ module Mixer =
       }
 
     let createOpenGLSceneBuffer'
-      (gl           : GlInterface       )
-      (glext        : GlInterfaceExt    )
-      (sceneID      : SceneID           )
-      (mixerScene   : MixerScene        )
-      (sceneBuffer  : SceneBuffer option)
+      (gl             : GlInterface       )
+      (glext          : GlInterfaceExt    )
+      (sceneID        : SceneID           )
+      (mixerScene     : MixerScene        )
+      (renderingOrder : int               )
+      (sceneBuffer    : SceneBuffer option)
       : OpenGLSceneBuffer voption =
 
       match sceneBuffer with
       | None    -> ValueNone
-      | Some sb -> createOpenGLSceneBuffer gl glext sceneID mixerScene sb |> ValueSome
+      | Some sb -> createOpenGLSceneBuffer gl glext sceneID mixerScene renderingOrder sb |> ValueSome
 
     let createOpenGLMixerPresenter
       (gl             : GlInterface   )
@@ -691,11 +718,11 @@ module Mixer =
 
       {
         MixerScene = mixerScene
-        BufferA    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene mixerScene.BufferA
-        BufferB    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene mixerScene.BufferB
-        BufferC    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene mixerScene.BufferC
-        BufferD    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene mixerScene.BufferD
-        Image      = createOpenGLSceneBuffer   gl glext sceneID mixerScene mixerScene.Image
+        BufferA    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene 0 mixerScene.BufferA
+        BufferB    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene 1 mixerScene.BufferB
+        BufferC    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene 2 mixerScene.BufferC
+        BufferD    = createOpenGLSceneBuffer'  gl glext sceneID mixerScene 3 mixerScene.BufferD
+        Image      = createOpenGLSceneBuffer   gl glext sceneID mixerScene 4 mixerScene.Image
       }
 
     let createOpenGLMixerBitmapImage
@@ -716,11 +743,11 @@ module Mixer =
       : OpenGLMixerStage =
 
       {
-        BufferA           = createOpenGLStageTexture gl glext resolution
-        BufferB           = createOpenGLStageTexture gl glext resolution
-        BufferC           = createOpenGLStageTexture gl glext resolution
-        BufferD           = createOpenGLStageTexture gl glext resolution
-        Image             = createOpenGLStageTexture gl glext resolution
+        BufferA           = createOpenGLStageTexture gl glext resolution 0
+        BufferB           = createOpenGLStageTexture gl glext resolution 1
+        BufferC           = createOpenGLStageTexture gl glext resolution 2
+        BufferD           = createOpenGLStageTexture gl glext resolution 3
+        Image             = createOpenGLStageTexture gl glext resolution 4
       }
 
     let tearDownOpenGLBufferChannel
@@ -850,7 +877,7 @@ module Mixer =
       let glext = mixer.GlExt
 
       tearDownOpenGLStageTexture mixer stageTexture
-      createOpenGLStageTexture   gl glext resolution
+      createOpenGLStageTexture   gl glext resolution stageTexture.RenderingOrder
 
     let resizeOpenGLMixerStage
       (mixer      : OpenGLMixer     )
@@ -917,6 +944,7 @@ module Mixer =
       (mixerStage     : OpenGLMixerStage    )
       (frameNo        : int                 )
       (textureUnitNo  : int                 )
+      (renderingOrder : int                 )
       (bufferChannel  : OpenGLBufferChannel )
       : unit =
 
@@ -925,11 +953,11 @@ module Mixer =
       | ValueSome loc ->
         let sourceTexture =
           match bufferChannel.BufferChannel.Source with
-          | BufferA       -> mixerStage.BufferA.BackgroundTexture frameNo
-          | BufferB       -> mixerStage.BufferB.BackgroundTexture frameNo
-          | BufferC       -> mixerStage.BufferC.BackgroundTexture frameNo
-          | BufferD       -> mixerStage.BufferD.BackgroundTexture frameNo
-          | Image         -> mixerStage.Image.BackgroundTexture   frameNo
+          | BufferA       -> mixerStage.BufferA.Texture renderingOrder frameNo
+          | BufferB       -> mixerStage.BufferB.Texture renderingOrder frameNo
+          | BufferC       -> mixerStage.BufferC.Texture renderingOrder frameNo
+          | BufferD       -> mixerStage.BufferD.Texture renderingOrder frameNo
+          | Image         -> mixerStage.Image.Texture   renderingOrder frameNo
           | BitmapImage ii->
             let image = mapGet "the bitmap image" mixer.NamedBitmapImages ii
             image.Texture
@@ -957,12 +985,13 @@ module Mixer =
       (mixerStage     : OpenGLMixerStage            )
       (frameNo        : int                         )
       (textureUnitNo  : int                         )
+      (renderingOrder : int                         )
       (bufferChannel  : OpenGLBufferChannel voption )
       : unit =
 
       match bufferChannel with
       | ValueNone     -> ()
-      | ValueSome bc  -> renderOpenGLBufferChannel mixer mixerStage frameNo textureUnitNo bc
+      | ValueSome bc  -> renderOpenGLBufferChannel mixer mixerStage frameNo textureUnitNo renderingOrder bc
 
     let renderProgram
       (mixer              : OpenGLMixer                   )
@@ -1015,10 +1044,10 @@ module Mixer =
       gl.UseProgram sceneBuffer.Program.ProgramID
       checkGL gl
 
-      renderOpenGLBufferChannel' mixer mixerStage frameNo 0 sceneBuffer.Channel0
-      renderOpenGLBufferChannel' mixer mixerStage frameNo 1 sceneBuffer.Channel1
-      renderOpenGLBufferChannel' mixer mixerStage frameNo 2 sceneBuffer.Channel2
-      renderOpenGLBufferChannel' mixer mixerStage frameNo 3 sceneBuffer.Channel3
+      renderOpenGLBufferChannel' mixer mixerStage frameNo 0 sceneBuffer.RenderingOrder sceneBuffer.Channel0
+      renderOpenGLBufferChannel' mixer mixerStage frameNo 1 sceneBuffer.RenderingOrder sceneBuffer.Channel1
+      renderOpenGLBufferChannel' mixer mixerStage frameNo 2 sceneBuffer.RenderingOrder sceneBuffer.Channel2
+      renderOpenGLBufferChannel' mixer mixerStage frameNo 3 sceneBuffer.RenderingOrder sceneBuffer.Channel3
 
       renderProgram mixer 0.F time sceneBuffer.MixLocation sceneBuffer.ResolutionLocation sceneBuffer.TimeLocation
 

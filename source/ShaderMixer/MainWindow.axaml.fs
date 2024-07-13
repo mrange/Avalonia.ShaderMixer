@@ -39,6 +39,7 @@ type MainWindow () as this =
 #endif
     AvaloniaXamlLoader.Load(this)
 
+    (*
     Setup.renderText
       512
       512
@@ -51,6 +52,7 @@ type MainWindow () as this =
         "Lance"
         "Longshot"
       |]
+    *)
 
 
     let playBack = Playback GlobalState.openALAudioMixer

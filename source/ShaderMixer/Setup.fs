@@ -17,6 +17,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses
 *)
 
 namespace ShaderMixer
+
+#nowarn "9"
+
 module Setup =
   open Lib.ShaderMixer
 
@@ -24,10 +27,54 @@ module Setup =
   open Avalonia.Controls
   open Avalonia.Media
   open Avalonia.Media.Imaging
+  open Avalonia.Platform
 
   open System.Globalization
 
+  open FSharp.NativeInterop
+
   open Scripting
+
+  let bitmapToMixerBitmapImage 
+    (bitmap : Bitmap) 
+    : MixerBitmapImage =
+
+    let sz      = bitmap.Size
+    let height  = int sz.Height
+    let width   = int sz.Width
+
+    let pixels : byte array = Array.create (width*height*4) 0uy
+
+    do
+      use ptr = fixed pixels
+      bitmap.CopyPixels (
+          PixelRect (0,0,width,height)
+        , NativePtr.toNativeInt ptr
+        , pixels.Length
+        , 4*width
+        )
+
+    // rtb.Save (@"D:\assets\testing.png")
+
+    let mbi : MixerBitmapImage = 
+      {
+        Width     = width 
+        Height    = height
+        Format    = RGBA
+        RGBABits  = pixels
+      }
+
+    mbi.Validate ()
+
+    mbi
+  
+  let loadBitmapFromFile
+    (fileName : string)
+    : MixerBitmapImage =
+
+    use bitmap = new Bitmap (fileName)
+
+    bitmapToMixerBitmapImage bitmap
 
   let renderText
     (width      : int         )
@@ -45,7 +92,7 @@ module Setup =
         , TextRenderingMode = TextRenderingMode.Antialias
         )
       use dc = rtb.CreateDrawingContext ()
-      use popRo = dc.PushRenderOptions ro
+      use _  = dc.PushRenderOptions ro
 
       let tf = Typeface fontFamily
 
@@ -67,11 +114,12 @@ module Setup =
 
         dc.DrawText (ft, Point (0., float (i*textHeight)))
 
-    rtb.Save (@"D:\assets\testing.png")
+    bitmapToMixerBitmapImage rtb
 
-    ()
   let gravitySucksID  = SceneID "gravitySucks"
   let gravitySucks    = basicScene ShaderSources.gravitySucks
+
+  let fireLord1       = loadBitmapFromFile @"d:\assets\ai-firelord-1.jpg"
 
   let mixer : Mixer =
     {
