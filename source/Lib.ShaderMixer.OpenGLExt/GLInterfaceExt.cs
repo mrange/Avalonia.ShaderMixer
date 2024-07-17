@@ -31,6 +31,9 @@ public unsafe partial class GlInterfaceExt
   // GetIntegerv
   readonly delegate* unmanaged[Stdcall]<int,int*,void> _addr_GetIntegerv;
 
+  // GetTexParameteriv
+  readonly delegate* unmanaged[Stdcall]<int,int,int*,void> _addr_GetTexParameteriv;
+
   // Uniform1i
   readonly delegate* unmanaged[Stdcall]<int,int,void> _addr_Uniform1i;
 
@@ -67,6 +70,15 @@ public unsafe partial class GlInterfaceExt
       throw new EntryPointNotFoundException("glGetIntegerv");
     }
     _addr_GetIntegerv = (delegate* unmanaged[Stdcall]<int,int*,void>)addr;
+
+
+    // GetTexParameteriv
+    addr = glInterface.GetProcAddress("glGetTexParameteriv");
+    if (addr == IntPtr.Zero)
+    {
+      throw new EntryPointNotFoundException("glGetTexParameteriv");
+    }
+    _addr_GetTexParameteriv = (delegate* unmanaged[Stdcall]<int,int,int*,void>)addr;
 
 
     // Uniform1i
@@ -120,6 +132,20 @@ public unsafe partial class GlInterfaceExt
     _addr_GetIntegerv(
       v0
     , v1
+    );
+  }
+
+  // GetTexParameteriv
+  public void GetTexParameteriv(
+      int v0
+    , int v1
+    , int* v2
+    )
+  {
+    _addr_GetTexParameteriv(
+      v0
+    , v1
+    , v2
     );
   }
 

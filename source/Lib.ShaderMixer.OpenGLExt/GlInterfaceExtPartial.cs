@@ -59,7 +59,6 @@ public struct Buffer8<T>
 public struct GetValues<T>
     where T : unmanaged
 {
-    public int Id;
     public Buffer8<T> Values;
 }
 
@@ -70,12 +69,27 @@ public unsafe partial class GlInterfaceExt
     )
   {
     GetValues<int> vs = default;
-    vs.Id = v0;
 
     _addr_GetIntegerv(
       v0
     , vs.Values.AsPtr()
     );
+    return vs;
+  }
+
+  public GetValues<int> GetTexParameteriv(
+      int v0
+    , int v1
+    )
+  {
+    GetValues<int> vs = default;
+
+    _addr_GetTexParameteriv(
+      v0
+    , v1
+    , vs.Values.AsPtr()
+    );
+
     return vs;
   }
 }

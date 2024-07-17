@@ -25,6 +25,7 @@ using global::Avalonia.OpenGL;
     ("IntPtr,IntPtr,void"     , "DebugMessageCallback")
   , ("int,void"               , "Disable")
   , ("int,int*,void"          , "GetIntegerv")
+  , ("int,int,int*,void"      , "GetTexParameteriv")
   , ("int,int,void"           , "Uniform1i")
   , ("int,float,float,void"   , "Uniform2f")
   };
