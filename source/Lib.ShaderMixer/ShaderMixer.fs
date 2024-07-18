@@ -1041,6 +1041,14 @@ module Mixer =
       gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, targetTexture.TextureID, 0)
       checkGL gl
 
+
+      let fboStatus = gl.CheckFramebufferStatus (GL_FRAMEBUFFER)
+
+      if fboStatus <> GL_FRAMEBUFFER_COMPLETE then
+        tracef "FBO Status: %d" fboStatus
+
+
+
       gl.UseProgram sceneBuffer.Program.ProgramID
       checkGL gl
 
@@ -1187,6 +1195,8 @@ module Mixer =
 #endif
 #endif
 
+    let oldTex = gl.GetIntegerv GL_TEXTURE_BINDING_2D
+
     let frameBuffer =
       {
         FrameBufferID = gl.GenFramebuffer ()
@@ -1245,23 +1255,29 @@ module Mixer =
 
     let expandedScript = expandScript mixer namedPresenters namedScenes
 
-    {
-      Mixer             = mixer
-      Resolution        = resolution
-      NamedBitmapImages = namedBitmapImages
-      NamedPresenters   = namedPresenters
-      NamedScenes       = namedScenes
-      ExpandedScript    = expandedScript
-      Stage0            = createOpenGLMixerStage gl glext resolution
-      Stage1            = createOpenGLMixerStage gl glext resolution
-      FrameBuffer       = frameBuffer
-      IndexBuffer       = indexBuffer
-      VertexBuffer      = vertexBuffer
-      VertexArray       = vertexArray
-      GlContext         = glContext
-      Gl                = gl
-      GlExt             = glext
-    }
+    let res =
+      {
+        Mixer             = mixer
+        Resolution        = resolution
+        NamedBitmapImages = namedBitmapImages
+        NamedPresenters   = namedPresenters
+        NamedScenes       = namedScenes
+        ExpandedScript    = expandedScript
+        Stage0            = createOpenGLMixerStage gl glext resolution
+        Stage1            = createOpenGLMixerStage gl glext resolution
+        FrameBuffer       = frameBuffer
+        IndexBuffer       = indexBuffer
+        VertexBuffer      = vertexBuffer
+        VertexArray       = vertexArray
+        GlContext         = glContext
+        Gl                = gl
+        GlExt             = glext
+      }
+
+    gl.BindTexture (GL_TEXTURE_2D, oldTex)
+    checkGL gl
+
+    res
 
   let tearDownOpenGLMixer
     (mixer  : OpenGLMixer )
@@ -1322,19 +1338,25 @@ module Mixer =
     let glext = mixer.GlExt
     checkGL gl
 
-
 #if DEBUG
 #if CAPTURE_OPENGL_LOGS
     use _ = new OpenGlDebugMode (gl, glext)
 #endif
 #endif
 
-    { mixer with
-        Resolution  = resolution
-        Stage0      = resizeOpenGLMixerStage mixer resolution mixer.Stage0
-        Stage1      = resizeOpenGLMixerStage mixer resolution mixer.Stage1
-    }
+    let oldTex = gl.GetIntegerv GL_TEXTURE_BINDING_2D
 
+    let res =
+      { mixer with
+          Resolution  = resolution
+          Stage0      = resizeOpenGLMixerStage mixer resolution mixer.Stage0
+          Stage1      = resizeOpenGLMixerStage mixer resolution mixer.Stage1
+      }
+
+    gl.BindTexture (GL_TEXTURE_2D, oldTex)
+    checkGL gl
+
+    res
   let renderOpenGLMixer
     (view         : PixelRect   )
     (mix          : float32     )
@@ -1355,6 +1377,9 @@ module Mixer =
 #endif
 #endif
 
+    let oldFbo = gl.GetIntegerv GL_FRAMEBUFFER_BINDING
+    let oldTex = gl.GetIntegerv GL_TEXTURE_BINDING_2D
+
     // This should have been check in the setup
     assert (mixer.ExpandedScript.Length > 0)
 
@@ -1371,8 +1396,6 @@ module Mixer =
 
     gl.Viewport (view.X, view.Y, view.Width, view.Height)
     checkGL gl
-
-    let oldFbo = gl.GetIntegerv GL_FRAMEBUFFER_BINDING
 
     gl.BindFramebuffer (GL_FRAMEBUFFER, mixer.FrameBuffer.FrameBufferID)
     checkGL gl
@@ -1399,4 +1422,7 @@ module Mixer =
     checkGL gl
 
     renderOpenGLMixerPresenter mixer mix time frameNo stage0 stage1 presenter
+
+    gl.BindTexture (GL_TEXTURE_2D, oldTex)
+    checkGL gl
 
